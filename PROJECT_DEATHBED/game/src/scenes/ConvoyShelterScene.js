@@ -1,13 +1,14 @@
 /**
  * PROJECT DEATHBED - Convoy Shelter Scene
  * The main interior scene - a converted vehicle/shelter where Luis rests
- * Dark blue atmosphere with warm amber accents from candles
+ * Lighter blue atmosphere with warm amber accents from candles
  */
 
 import * as THREE from 'three';
 import { LightEntity } from '../entities/LightEntity.js';
 import { NPCEntity } from '../entities/NPCEntity.js';
 import { InteractableObject } from '../entities/InteractableObject.js';
+import { textureGenerator } from '../utils/TextureGenerator.js';
 
 export class ConvoyShelterScene {
     constructor(game) {
@@ -16,6 +17,12 @@ export class ConvoyShelterScene {
         this.interactables = [];
         this.npcs = [];
         this.lightEntity = null;
+        
+        // Get textures
+        this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 100, g: 70, b: 45 } });
+        this.metalTexture = textureGenerator.getTexture('metal', { color: { r: 90, g: 95, b: 100 } });
+        this.fabricTexture = textureGenerator.getTexture('fabric', { color: { r: 85, g: 75, b: 65 } });
+        this.concreteTexture = textureGenerator.getTexture('concrete', { color: { r: 100, g: 100, b: 105 } });
         
         // Build the scene
         this.setupEnvironment();
@@ -28,18 +35,18 @@ export class ConvoyShelterScene {
     }
     
     setupEnvironment() {
-        // Dark blue fog for atmosphere
-        this.scene.fog = new THREE.FogExp2(0x0a0a1a, 0.05);
-        this.scene.background = new THREE.Color(0x0a0a12);
+        // Lighter blue fog for softer atmosphere
+        this.scene.fog = new THREE.FogExp2(0x151525, 0.04);
+        this.scene.background = new THREE.Color(0x12121f);
     }
     
     setupLighting() {
-        // Very dim ambient light - dark blue tint
-        const ambientLight = new THREE.AmbientLight(0x1a1a3a, 0.3);
+        // Brighter ambient light - softer blue tint
+        const ambientLight = new THREE.AmbientLight(0x2a2a4a, 0.5);
         this.scene.add(ambientLight);
         
         // Main candle light (warm amber) - creates the focal point
-        const candleLight1 = new THREE.PointLight(0xffaa44, 1.5, 8, 2);
+        const candleLight1 = new THREE.PointLight(0xffbb55, 1.8, 10, 1.8);
         candleLight1.position.set(2, 1.2, 0);
         candleLight1.castShadow = true;
         candleLight1.shadow.mapSize.width = 512;
@@ -47,43 +54,49 @@ export class ConvoyShelterScene {
         this.scene.add(candleLight1);
         this.candleLight1 = candleLight1;
         
-        // Secondary candle
-        const candleLight2 = new THREE.PointLight(0xffaa44, 0.8, 5, 2);
+        // Secondary candle - brighter
+        const candleLight2 = new THREE.PointLight(0xffbb55, 1.0, 6, 2);
         candleLight2.position.set(-3, 0.8, -2);
         this.scene.add(candleLight2);
         this.candleLight2 = candleLight2;
         
-        // Subtle blue rim light from covered window (the outside world)
-        const windowLight = new THREE.RectAreaLight(0x3a5a8a, 0.5, 2, 1.5);
+        // Softer blue rim light from covered window
+        const windowLight = new THREE.RectAreaLight(0x5a7aaa, 0.8, 2, 1.5);
         windowLight.position.set(5, 2, 0);
         windowLight.lookAt(0, 1.5, 0);
         this.scene.add(windowLight);
         
-        // Luis's subtle glow (he's touched by the Light)
-        const luisGlow = new THREE.PointLight(0xc9a227, 0.3, 3, 2);
+        // Luis's warm glow (he's touched by the Light)
+        const luisGlow = new THREE.PointLight(0xd4b247, 0.5, 4, 2);
         luisGlow.position.set(-2, 0.8, 2);
         this.scene.add(luisGlow);
         this.luisGlow = luisGlow;
+        
+        // Additional fill light
+        const fillLight = new THREE.HemisphereLight(0x4a5a7a, 0x2a2030, 0.3);
+        this.scene.add(fillLight);
     }
     
     createShelterGeometry() {
-        // Floor - worn metal/wood texture appearance
+        // Floor - worn wood texture
         const floorGeometry = new THREE.PlaneGeometry(12, 10);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2a2a35,
-            roughness: 0.9,
-            metalness: 0.1
+            color: 0x4a4a55,
+            map: this.woodTexture,
+            roughness: 0.85,
+            metalness: 0.05
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.scene.add(floor);
         
-        // Walls - creating an enclosed shelter feeling
+        // Walls - lighter metal panels
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1a1a25,
-            roughness: 0.8,
-            metalness: 0.2
+            color: 0x2a2a35,
+            map: this.metalTexture,
+            roughness: 0.75,
+            metalness: 0.25
         });
         
         // Back wall
@@ -98,7 +111,7 @@ export class ConvoyShelterScene {
         // Left wall
         const leftWall = new THREE.Mesh(
             new THREE.PlaneGeometry(10, 4),
-            wallMaterial
+            wallMaterial.clone()
         );
         leftWall.position.set(-6, 2, 0);
         leftWall.rotation.y = Math.PI / 2;
@@ -108,7 +121,7 @@ export class ConvoyShelterScene {
         // Right wall with covered window
         const rightWall = new THREE.Mesh(
             new THREE.PlaneGeometry(10, 4),
-            wallMaterial
+            wallMaterial.clone()
         );
         rightWall.position.set(6, 2, 0);
         rightWall.rotation.y = -Math.PI / 2;
@@ -543,29 +556,32 @@ export class ConvoyShelterScene {
     }
     
     createAtmosphericEffects() {
-        // Dust particles floating in the light
-        const particleCount = 100;
-        const particleGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        
-        for (let i = 0; i < particleCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 10;
-            positions[i + 1] = Math.random() * 3;
-            positions[i + 2] = (Math.random() - 0.5) * 8;
+        // Use the game's particle system for enhanced dust particles
+        if (this.game.particleSystem) {
+            this.game.particleSystem.createDustParticles(this.scene, {
+                count: 300,
+                range: { x: 12, y: 4, z: 10 },
+                color: 0x8a8a8a,
+                size: 0.015
+            });
+            
+            // Add rising light particles around Luis
+            this.game.particleSystem.createRisingLightParticles(this.scene, {
+                count: 25,
+                position: new THREE.Vector3(-2, 0.5, 2),
+                color: 0xc9a227,
+                spread: 0.8
+            });
+            
+            // Add glow particles around candle
+            this.game.particleSystem.createGlowParticles(this.scene, {
+                count: 20,
+                position: new THREE.Vector3(2, 1.2, 0),
+                color: 0xffaa44,
+                radius: 0.3,
+                intensity: 0.5
+            });
         }
-        
-        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        
-        const particleMaterial = new THREE.PointsMaterial({
-            color: 0x888888,
-            size: 0.02,
-            transparent: true,
-            opacity: 0.4,
-            blending: THREE.AdditiveBlending
-        });
-        
-        this.dustParticles = new THREE.Points(particleGeometry, particleMaterial);
-        this.scene.add(this.dustParticles);
         
         // Light fractures visible through window (subtle)
         this.createLightFractures();
@@ -619,16 +635,6 @@ export class ConvoyShelterScene {
             // Lower integrity = stronger, more erratic glow
             const baseIntensity = 0.3 + (100 - shapeIntegrity) * 0.005;
             this.luisGlow.intensity = baseIntensity + Math.sin(Date.now() * 0.003) * 0.1;
-        }
-        
-        // Animate dust particles
-        if (this.dustParticles) {
-            const positions = this.dustParticles.geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i + 1] += Math.sin(Date.now() * 0.001 + i) * 0.0005;
-                if (positions[i + 1] > 3) positions[i + 1] = 0;
-            }
-            this.dustParticles.geometry.attributes.position.needsUpdate = true;
         }
         
         // Animate light fractures

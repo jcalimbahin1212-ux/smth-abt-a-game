@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { InteractableObject } from '../entities/InteractableObject.js';
+import { textureGenerator } from '../utils/TextureGenerator.js';
 
 export class ApartmentScene {
     constructor(game) {
@@ -12,6 +13,10 @@ export class ApartmentScene {
         this.scene = new THREE.Scene();
         this.interactables = [];
         this.npcs = [];
+        
+        // Get textures
+        this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 130, g: 90, b: 55 } });
+        this.fabricTexture = textureGenerator.getTexture('fabric', { color: { r: 100, g: 95, b: 85 } });
         
         // Build the scene
         this.setupEnvironment();
@@ -26,57 +31,62 @@ export class ApartmentScene {
     }
     
     setupEnvironment() {
-        // Warmer, more inviting atmosphere - before the Light
-        this.scene.fog = new THREE.FogExp2(0x1a1820, 0.02);
-        this.scene.background = new THREE.Color(0x12101a);
+        // Warmer, lighter, more inviting atmosphere
+        this.scene.fog = new THREE.FogExp2(0x2a2530, 0.015);
+        this.scene.background = new THREE.Color(0x1a1825);
     }
     
     setupLighting() {
-        // Warm ambient light - evening in the apartment
-        const ambientLight = new THREE.AmbientLight(0x2a2030, 0.4);
+        // Warmer, brighter ambient light
+        const ambientLight = new THREE.AmbientLight(0x3a3040, 0.6);
         this.scene.add(ambientLight);
         
-        // Main living room lamp - warm orange
-        const lampLight = new THREE.PointLight(0xffaa66, 1.2, 12, 2);
+        // Main living room lamp - warm orange (brighter)
+        const lampLight = new THREE.PointLight(0xffbb77, 1.5, 15, 1.8);
         lampLight.position.set(-2, 2, 0);
         lampLight.castShadow = true;
         this.scene.add(lampLight);
         this.lampLight = lampLight;
         
-        // Kitchen light
-        const kitchenLight = new THREE.PointLight(0xffffee, 0.8, 8, 2);
+        // Kitchen light (brighter)
+        const kitchenLight = new THREE.PointLight(0xffffee, 1.0, 10, 2);
         kitchenLight.position.set(4, 2.5, -2);
         this.scene.add(kitchenLight);
         
-        // Window - evening blue light from outside
-        const windowLight = new THREE.RectAreaLight(0x4466aa, 0.6, 3, 2);
+        // Window - evening blue light from outside (softer)
+        const windowLight = new THREE.RectAreaLight(0x5577bb, 0.8, 3, 2);
         windowLight.position.set(-6, 2, 0);
         windowLight.lookAt(0, 1.5, 0);
         this.scene.add(windowLight);
         
-        // TV glow (subtle)
-        const tvGlow = new THREE.PointLight(0x6688ff, 0.3, 4, 2);
+        // TV glow (subtle, blueish)
+        const tvGlow = new THREE.PointLight(0x7799ff, 0.4, 5, 2);
         tvGlow.position.set(0, 1.2, -4);
         this.scene.add(tvGlow);
+        
+        // Hemisphere light for overall fill
+        const hemiLight = new THREE.HemisphereLight(0x5a5a7a, 0x2a2030, 0.3);
+        this.scene.add(hemiLight);
     }
     
     createApartmentGeometry() {
-        // Floor - wooden floor appearance
+        // Floor - wooden floor with texture
         const floorGeometry = new THREE.PlaneGeometry(14, 12);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x4a3a2a,
-            roughness: 0.8,
-            metalness: 0.1
+            color: 0x6a5a4a,
+            map: this.woodTexture,
+            roughness: 0.75,
+            metalness: 0.05
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.scene.add(floor);
         
-        // Walls - cream/off-white
+        // Walls - warmer cream/off-white
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3a3538,
-            roughness: 0.9,
+            color: 0x4a4548,
+            roughness: 0.85,
             metalness: 0.0
         });
         
@@ -101,20 +111,20 @@ export class ApartmentScene {
         // Window frame
         const windowFrame = new THREE.Mesh(
             new THREE.BoxGeometry(0.1, 2.2, 3.2),
-            new THREE.MeshStandardMaterial({ color: 0x2a2a30 })
+            new THREE.MeshStandardMaterial({ color: 0x3a3a40 })
         );
         windowFrame.position.set(-6.9, 2, 0);
         this.scene.add(windowFrame);
         
-        // Window glass - shows evening sky
+        // Window glass - shows evening sky (brighter)
         const windowGlass = new THREE.Mesh(
             new THREE.PlaneGeometry(3, 2),
             new THREE.MeshStandardMaterial({
-                color: 0x2244aa,
-                emissive: 0x112244,
-                emissiveIntensity: 0.3,
+                color: 0x3355bb,
+                emissive: 0x223366,
+                emissiveIntensity: 0.4,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.75
             })
         );
         windowGlass.position.set(-6.85, 2, 0);
@@ -143,8 +153,8 @@ export class ApartmentScene {
         const ceiling = new THREE.Mesh(
             new THREE.PlaneGeometry(14, 12),
             new THREE.MeshStandardMaterial({
-                color: 0x2a2830,
-                roughness: 0.95
+                color: 0x3a3840,
+                roughness: 0.9
             })
         );
         ceiling.position.set(0, 4, 0);

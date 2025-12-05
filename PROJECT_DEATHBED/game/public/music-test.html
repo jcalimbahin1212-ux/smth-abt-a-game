@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT DEATHBED - Music Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a30 50%, #0a0a15 100%);
+            min-height: 100vh;
+            color: #c9a227;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #6a7a8a;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+        
+        .section {
+            background: rgba(30, 30, 50, 0.8);
+            border: 1px solid #c9a227;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(201, 162, 39, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .file-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        input[type="file"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem;
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid #c9a227;
+            border-radius: 4px;
+            color: #c9a227;
+            cursor: pointer;
+        }
+        
+        input[type="file"]::file-selector-button {
+            background: #c9a227;
+            color: #0a0a15;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
+        
+        button {
+            background: rgba(201, 162, 39, 0.2);
+            border: 1px solid #c9a227;
+            color: #c9a227;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: rgba(201, 162, 39, 0.4);
+            transform: scale(1.02);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            min-width: 150px;
+            accent-color: #c9a227;
+        }
+        
+        .status {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-family: monospace;
+            color: #8a9aaa;
+        }
+        
+        .status.playing {
+            color: #7aff7a;
+        }
+        
+        .status.error {
+            color: #ff7a7a;
+        }
+        
+        .procedural-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .procedural-btn {
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .instructions {
+            color: #8a9aaa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .instructions code {
+            background: rgba(201, 162, 39, 0.2);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            color: #c9a227;
+        }
+        
+        .instructions ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .visualizer {
+            height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            padding: 0.5rem;
+        }
+        
+        .bar {
+            width: 8px;
+            background: linear-gradient(to top, #c9a227, #ffdd77);
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Music Test</h1>
+        <p class="subtitle">PROJECT DEATHBED Audio System</p>
+        
+        <!-- Custom Music Section -->
+        <div class="section">
+            <h2>🎧 Test Your Custom Music</h2>
+            <div class="file-input-wrapper">
+                <input type="file" id="musicFile" accept="audio/*">
+                <button id="playCustom">▶ Play</button>
+            </div>
+            
+            <div class="controls">
+                <button id="pauseBtn" disabled>⏸ Pause</button>
+                <button id="resumeBtn" disabled>▶ Resume</button>
+                <button id="stopBtn" disabled>⏹ Stop</button>
+            </div>
+            
+            <div class="volume-control">
+                <span>🔊 Volume:</span>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50">
+                <span id="volumeValue">50%</span>
+            </div>
+            
+            <div class="visualizer" id="visualizer">
+                <!-- Bars will be added by JS -->
+            </div>
+            
+            <div class="status" id="status">Ready - Select an audio file to begin</div>
+        </div>
+        
+        <!-- Procedural Audio Section -->
+        <div class="section">
+            <h2>🎹 Procedural Ambient Sounds</h2>
+            <p style="color: #6a7a8a; margin-bottom: 1rem; font-size: 0.9rem;">
+                These are the game's built-in procedural audio tracks (no files needed)
+            </p>
+            <div class="procedural-section">
+                <button class="procedural-btn" data-type="somber_ambient">
+                    😢 Somber Ambient<br><small>D Minor Drone</small>
+                </button>
+                <button class="procedural-btn" data-type="light_presence">
+                    ✨ Light Presence<br><small>Ethereal Tones</small>
+                </button>
+                <button class="procedural-btn" data-type="tension">
+                    😰 Tension<br><small>Dissonant</small>
+                </button>
+                <button class="procedural-btn" id="stopProcedural">
+                    ⏹ Stop All<br><small>Silence</small>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Instructions Section -->
+        <div class="section">
+            <h2>📝 How to Add Music to the Game</h2>
+            <div class="instructions">
+                <ol>
+                    <li>Place your music files in: <code>public/music/</code></li>
+                    <li>In your scene or game code, add:
+                        <pre style="background: rgba(0,0,0,0.3); padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px; overflow-x: auto;">
+game.audioManager.playCustomMusic('your_song.mp3', {
+    loop: true,
+    volume: 0.5,
+    fadeIn: 2
+});</pre>
+                    </li>
+                    <li>Supported formats: <code>MP3</code>, <code>OGG</code>, <code>WAV</code>, <code>AAC</code></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Audio context and nodes
+        let audioContext;
+        let audioElement;
+        let sourceNode;
+        let gainNode;
+        let analyser;
+        let isPlaying = false;
+        
+        // Procedural audio
+        let proceduralOscillators = [];
+        
+        // DOM elements
+        const musicFile = document.getElementById('musicFile');
+        const playCustom = document.getElementById('playCustom');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const status = document.getElementById('status');
+        const visualizer = document.getElementById('visualizer');
+        
+        // Create visualizer bars
+        for (let i = 0; i < 32; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = '5px';
+            visualizer.appendChild(bar);
+        }
+        const bars = visualizer.querySelectorAll('.bar');
+        
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.5;
+                gainNode.connect(audioContext.destination);
+                
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                analyser.connect(gainNode);
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+        
+        // Play custom music file
+        playCustom.addEventListener('click', async () => {
+            const file = musicFile.files[0];
+            if (!file) {
+                setStatus('Please select an audio file first', 'error');
+                return;
+            }
+            
+            initAudio();
+            
+            // Stop current audio
+            if (audioElement) {
+                audioElement.pause();
+                audioElement = null;
+            }
+            
+            try {
+                const url = URL.createObjectURL(file);
+                audioElement = new Audio(url);
+                audioElement.loop = true;
+                
+                sourceNode = audioContext.createMediaElementSource(audioElement);
+                sourceNode.connect(analyser);
+                
+                await audioElement.play();
+                isPlaying = true;
+                
+                setStatus(`Now playing: ${file.name}`, 'playing');
+                updateButtons(true);
+                updateVisualizer();
+            } catch (error) {
+                setStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Pause
+        pauseBtn.addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                isPlaying = false;
+                setStatus('Paused', '');
+            }
+        });
+        
+        // Resume
+        resumeBtn.addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.play();
+                isPlaying = true;
+                setStatus(`Resumed: ${musicFile.files[0]?.name || 'audio'}`, 'playing');
+                updateVisualizer();
+            }
+        });
+        
+        // Stop
+        stopBtn.addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                audioElement = null;
+                isPlaying = false;
+                setStatus('Stopped', '');
+                updateButtons(false);
+                resetVisualizer();
+            }
+        });
+        
+        // Volume
+        volumeSlider.addEventListener('input', () => {
+            const value = volumeSlider.value / 100;
+            volumeValue.textContent = `${volumeSlider.value}%`;
+            if (gainNode) {
+                gainNode.gain.value = value;
+            }
+        });
+        
+        // Procedural audio buttons
+        document.querySelectorAll('.procedural-btn[data-type]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                initAudio();
+                stopProceduralAudio();
+                playProceduralAudio(btn.dataset.type);
+                setStatus(`Playing: ${btn.dataset.type.replace('_', ' ')}`, 'playing');
+            });
+        });
+        
+        document.getElementById('stopProcedural').addEventListener('click', () => {
+            stopProceduralAudio();
+            setStatus('Procedural audio stopped', '');
+        });
+        
+        // Procedural audio generators
+        function playProceduralAudio(type) {
+            let baseFreq, layers;
+            
+            switch (type) {
+                case 'somber_ambient':
+                    baseFreq = 73.42; // D2
+                    layers = [
+                        { freq: baseFreq, gain: 0.15 },
+                        { freq: baseFreq * 2, gain: 0.08 },
+                        { freq: baseFreq * 1.5, gain: 0.06 },
+                        { freq: baseFreq * 1.2, gain: 0.04 },
+                    ];
+                    break;
+                case 'light_presence':
+                    baseFreq = 293.66; // D4
+                    layers = [
+                        { freq: baseFreq, gain: 0.08 },
+                        { freq: baseFreq * 1.5, gain: 0.06 },
+                        { freq: baseFreq * 2, gain: 0.04 },
+                        { freq: baseFreq * 2.5, gain: 0.03 },
+                    ];
+                    break;
+                case 'tension':
+                    baseFreq = 82.41; // E2
+                    layers = [
+                        { freq: baseFreq, gain: 0.12 },
+                        { freq: baseFreq * 1.059, gain: 0.08 },
+                        { freq: baseFreq * 1.414, gain: 0.06 },
+                    ];
+                    break;
+            }
+            
+            layers.forEach(layer => {
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = layer.freq;
+                oscGain.gain.value = layer.gain * (volumeSlider.value / 100);
+                
+                // Add LFO for movement
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.1 + Math.random() * 0.1;
+                lfoGain.gain.value = layer.freq * 0.01;
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                
+                osc.connect(oscGain);
+                oscGain.connect(gainNode);
+                
+                osc.start();
+                lfo.start();
+                
+                proceduralOscillators.push({ osc, lfo, gain: oscGain });
+            });
+        }
+        
+        function stopProceduralAudio() {
+            proceduralOscillators.forEach(item => {
+                try {
+                    item.osc.stop();
+                    item.lfo.stop();
+                } catch (e) {}
+            });
+            proceduralOscillators = [];
+        }
+        
+        // Helper functions
+        function setStatus(message, className) {
+            status.textContent = message;
+            status.className = 'status ' + className;
+        }
+        
+        function updateButtons(playing) {
+            pauseBtn.disabled = !playing;
+            resumeBtn.disabled = !playing;
+            stopBtn.disabled = !playing;
+        }
+        
+        function updateVisualizer() {
+            if (!isPlaying || !analyser) return;
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            bars.forEach((bar, i) => {
+                const value = dataArray[i] || 0;
+                bar.style.height = Math.max(5, value / 4) + 'px';
+            });
+            
+            requestAnimationFrame(updateVisualizer);
+        }
+        
+        function resetVisualizer() {
+            bars.forEach(bar => {
+                bar.style.height = '5px';
+            });
+        }
+    </script>
+</body>
+</html>

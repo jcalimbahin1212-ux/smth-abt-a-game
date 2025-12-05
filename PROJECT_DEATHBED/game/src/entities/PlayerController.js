@@ -101,11 +101,19 @@ export class PlayerController {
         }
     }
     
-    setBounds(minX, maxX, minZ, maxZ) {
-        this.bounds.minX = minX;
-        this.bounds.maxX = maxX;
-        this.bounds.minZ = minZ;
-        this.bounds.maxZ = maxZ;
+    setBounds(boundsOrMinX, maxX, minZ, maxZ) {
+        // Handle both object and individual parameter formats
+        if (typeof boundsOrMinX === 'object') {
+            this.bounds.minX = boundsOrMinX.minX ?? this.bounds.minX;
+            this.bounds.maxX = boundsOrMinX.maxX ?? this.bounds.maxX;
+            this.bounds.minZ = boundsOrMinX.minZ ?? this.bounds.minZ;
+            this.bounds.maxZ = boundsOrMinX.maxZ ?? this.bounds.maxZ;
+        } else {
+            this.bounds.minX = boundsOrMinX;
+            this.bounds.maxX = maxX;
+            this.bounds.minZ = minZ;
+            this.bounds.maxZ = maxZ;
+        }
     }
     
     setPosition(x, y, z) {

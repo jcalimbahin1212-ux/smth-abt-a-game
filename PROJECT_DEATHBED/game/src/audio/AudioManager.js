@@ -439,6 +439,149 @@ export class AudioManager {
         }
     }
     
+    // ========== CUSTOM MUSIC PLAYBACK ==========
+    
+    /**
+     * Play a custom music file (MP3, WAV, OGG, etc.)
+     * Place your music files in: PROJECT_DEATHBED/game/public/music/
+     * 
+     * Example usage:
+     *   audioManager.playCustomMusic('my_song.mp3');
+     *   audioManager.playCustomMusic('ambient_track.ogg', { loop: true, volume: 0.6 });
+     * 
+     * @param {string} filename - The music file name (e.g., 'my_song.mp3')
+     * @param {object} options - { loop: boolean, volume: number (0-1), fadeIn: number (seconds) }
+     */
+    async playCustomMusic(filename, options = {}) {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        
+        const loop = options.loop !== undefined ? options.loop : true;
+        const volume = options.volume !== undefined ? options.volume : 0.5;
+        const fadeIn = options.fadeIn !== undefined ? options.fadeIn : 2;
+        
+        // Stop current custom music if playing
+        this.stopCustomMusic();
+        
+        try {
+            // Create audio element for the file
+            this.customMusicElement = new Audio(`/music/${filename}`);
+            this.customMusicElement.loop = loop;
+            this.customMusicElement.volume = 0;
+            
+            // Connect to Web Audio API for better control
+            this.customMusicSource = this.audioContext.createMediaElementSource(this.customMusicElement);
+            this.customMusicGain = this.audioContext.createGain();
+            this.customMusicGain.gain.value = 0;
+            
+            this.customMusicSource.connect(this.customMusicGain);
+            this.customMusicGain.connect(this.musicGain);
+            
+            // Start playing
+            await this.customMusicElement.play();
+            
+            // Fade in
+            const now = this.audioContext.currentTime;
+            this.customMusicGain.gain.setValueAtTime(0, now);
+            this.customMusicGain.gain.linearRampToValueAtTime(volume, now + fadeIn);
+            
+            console.log(`Now playing: ${filename}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to play music file: ${filename}`, error);
+            console.log('Make sure the file is in: PROJECT_DEATHBED/game/public/music/');
+            return false;
+        }
+    }
+    
+    /**
+     * Stop custom music with optional fade out
+     * @param {number} fadeOut - Fade out duration in seconds
+     */
+    stopCustomMusic(fadeOut = 1) {
+        if (this.customMusicGain && this.audioContext) {
+            const now = this.audioContext.currentTime;
+            this.customMusicGain.gain.linearRampToValueAtTime(0, now + fadeOut);
+            
+            setTimeout(() => {
+                if (this.customMusicElement) {
+                    this.customMusicElement.pause();
+                    this.customMusicElement = null;
+                }
+            }, fadeOut * 1000);
+        }
+    }
+    
+    /**
+     * Set custom music volume
+     * @param {number} volume - Volume level (0-1)
+     */
+    setCustomMusicVolume(volume) {
+        if (this.customMusicGain) {
+            this.customMusicGain.gain.value = volume;
+        }
+    }
+    
+    /**
+     * Pause custom music
+     */
+    pauseCustomMusic() {
+        if (this.customMusicElement) {
+            this.customMusicElement.pause();
+        }
+    }
+    
+    /**
+     * Resume custom music
+     */
+    resumeCustomMusic() {
+        if (this.customMusicElement) {
+            this.customMusicElement.play();
+        }
+    }
+    
+    /**
+     * Load and play a music file from a URL or file input
+     * @param {File|Blob|string} source - File object, Blob, or URL
+     * @param {object} options - Playback options
+     */
+    async playMusicFromSource(source, options = {}) {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        
+        this.stopCustomMusic();
+        
+        const loop = options.loop !== undefined ? options.loop : true;
+        const volume = options.volume !== undefined ? options.volume : 0.5;
+        
+        try {
+            let url;
+            if (source instanceof File || source instanceof Blob) {
+                url = URL.createObjectURL(source);
+            } else {
+                url = source;
+            }
+            
+            this.customMusicElement = new Audio(url);
+            this.customMusicElement.loop = loop;
+            
+            this.customMusicSource = this.audioContext.createMediaElementSource(this.customMusicElement);
+            this.customMusicGain = this.audioContext.createGain();
+            this.customMusicGain.gain.value = volume;
+            
+            this.customMusicSource.connect(this.customMusicGain);
+            this.customMusicGain.connect(this.musicGain);
+            
+            await this.customMusicElement.play();
+            return true;
+        } catch (error) {
+            console.error('Failed to play music from source:', error);
+            return false;
+        }
+    }
+    
     // Volume controls
     setMasterVolume(value) {
         this.volumes.master = value;
@@ -458,6 +601,13 @@ export class AudioManager {
         this.volumes.sfx = value;
         if (this.sfxGain) {
             this.sfxGain.gain.value = value;
+        }
+    }
+    
+    setMusicVolume(value) {
+        this.volumes.music = value;
+        if (this.musicGain) {
+            this.musicGain.gain.value = value;
         }
     }
 }

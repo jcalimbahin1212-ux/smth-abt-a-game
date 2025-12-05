@@ -1,6 +1,6 @@
 /**
  * PROJECT DEATHBED - Renderer
- * Handles WebGL rendering with the dark blue color scheme
+ * Handles WebGL rendering with the dark blue color scheme (lightened)
  */
 
 import * as THREE from 'three';
@@ -17,16 +17,16 @@ export class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-        // Dark blue color scheme
-        this.renderer.setClearColor(0x0a0a12, 1);
+        // Lighter dark blue color scheme
+        this.renderer.setClearColor(0x12121f, 1);
         
         // Enable shadows for atmospheric lighting
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // Tone mapping for cinematic look
+        // Tone mapping for cinematic look - increased exposure for brightness
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 0.8;
+        this.renderer.toneMappingExposure = 1.1; // Increased from 0.8
         
         // Output encoding
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;

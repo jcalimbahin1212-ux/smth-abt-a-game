@@ -11,6 +11,7 @@ import { UIManager } from '../ui/UIManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { InteractionSystem } from '../systems/InteractionSystem.js';
 import { DialogueSystem } from '../systems/DialogueSystem.js';
+import { ParticleSystem } from '../systems/ParticleSystem.js';
 import { GameState } from './GameState.js';
 
 export class Game {
@@ -25,6 +26,7 @@ export class Game {
         this.audioManager = new AudioManager();
         this.uiManager = new UIManager();
         this.gameState = new GameState();
+        this.particleSystem = new ParticleSystem();
         
         // Initialize game systems
         this.sceneManager = new SceneManager(this);
@@ -139,6 +141,27 @@ export class Game {
         this.mainMenu.appendChild(instructions);
         
         document.body.appendChild(this.mainMenu);
+        
+        // Play intro music on first user interaction (browsers require this)
+        this.introMusicStarted = false;
+        const startIntroMusic = () => {
+            if (!this.introMusicStarted) {
+                this.introMusicStarted = true;
+                this.playIntroMusic();
+            }
+        };
+        
+        document.addEventListener('click', startIntroMusic, { once: true });
+        document.addEventListener('keydown', startIntroMusic, { once: true });
+    }
+    
+    playIntroMusic() {
+        // Start intro music with fade-in, loop enabled
+        this.audioManager.playCustomMusic('intro-theme.mp3', {
+            loop: true,
+            volume: 0.6,
+            fadeIn: 2.0
+        });
     }
     
     hideLoadingScreen() {
@@ -163,6 +186,9 @@ export class Game {
     startGame(sceneName) {
         // Hide main menu
         this.mainMenu.style.display = 'none';
+        
+        // Fade out intro music
+        this.audioManager.stopCustomMusic(2.0);
         
         if (this.isRunning) {
             // Already running, just load the scene
@@ -205,6 +231,7 @@ export class Game {
         this.sceneManager.update(this.deltaTime);
         this.interactionSystem.update();
         this.dialogueSystem.update(this.deltaTime);
+        this.particleSystem.update(this.deltaTime);
         this.uiManager.update(this.gameState);
         
         // Render

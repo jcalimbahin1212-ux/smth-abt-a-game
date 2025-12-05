@@ -547,4 +547,23 @@ export class ExteriorScene {
             });
         });
     }
+    
+    onEnter() {
+        // Add atmospheric particles when entering the scene
+        if (this.game.particleSystem) {
+            this.game.particleSystem.createDustParticles(this.scene, {
+                count: 400,
+                range: { x: 30, y: 5, z: 30 },
+                color: 0x5a5a6a,
+                size: 0.025
+            });
+            
+            // Add eerie firefly-like particles
+            this.game.particleSystem.createFireflies(this.scene, {
+                count: 20,
+                range: { x: 25, y: 4, z: 25 },
+                color: 0xaaddff
+            });
+        }
+    }
 }
