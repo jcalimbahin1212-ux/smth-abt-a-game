@@ -1,0 +1,58 @@
+/**
+ * PROJECT DEATHBED - Renderer
+ * Handles WebGL rendering with the dark blue color scheme
+ */
+
+import * as THREE from 'three';
+
+export class Renderer {
+    constructor() {
+        // Create the WebGL renderer
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
+        
+        // Configure renderer
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Dark blue color scheme
+        this.renderer.setClearColor(0x0a0a12, 1);
+        
+        // Enable shadows for atmospheric lighting
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Tone mapping for cinematic look
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 0.8;
+        
+        // Output encoding
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        
+        // Add to DOM
+        const container = document.getElementById('game-container');
+        container.appendChild(this.renderer.domElement);
+        
+        this.domElement = this.renderer.domElement;
+    }
+    
+    render(scene, camera) {
+        if (scene && camera) {
+            this.renderer.render(scene, camera);
+        }
+    }
+    
+    handleResize() {
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    get width() {
+        return window.innerWidth;
+    }
+    
+    get height() {
+        return window.innerHeight;
+    }
+}

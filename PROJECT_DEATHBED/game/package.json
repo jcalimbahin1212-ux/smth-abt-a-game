@@ -1,0 +1,21 @@
+{
+  "name": "project-deathbed",
+  "version": "1.0.0",
+  "description": "A narrative-driven 3D game about love, loss, and a lonely sky",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "keywords": ["game", "3d", "narrative", "three.js"],
+  "author": "Project Deathbed Team",
+  "license": "MIT"
+}

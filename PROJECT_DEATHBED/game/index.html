@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT DEATHBED</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #0a0a12;
+            font-family: 'Georgia', serif;
+        }
+        
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a12 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease;
+        }
+        
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        #loading-screen h1 {
+            color: #c9a227;
+            font-size: 3rem;
+            letter-spacing: 0.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
+        }
+        
+        #loading-screen p {
+            color: #6a6a8a;
+            font-style: italic;
+            margin-bottom: 3rem;
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: #1a1a2e;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c9a227, #ffd700);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        #dialogue-box {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(180deg, rgba(10, 10, 18, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+            border-radius: 8px;
+            padding: 20px 30px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: auto;
+        }
+        
+        #dialogue-box.visible {
+            opacity: 1;
+        }
+        
+        #speaker-name {
+            color: #c9a227;
+            font-size: 0.9rem;
+            letter-spacing: 0.1rem;
+            margin-bottom: 10px;
+        }
+        
+        #dialogue-text {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        #dialogue-continue {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            color: #6a6a8a;
+            font-size: 0.8rem;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        #interaction-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #c9a227;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }
+        
+        #interaction-prompt.visible {
+            opacity: 1;
+        }
+        
+        #status-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 18, 0.8);
+            border: 1px solid rgba(201, 162, 39, 0.2);
+            border-radius: 8px;
+            padding: 15px 20px;
+            min-width: 200px;
+        }
+        
+        .status-item {
+            margin-bottom: 10px;
+        }
+        
+        .status-label {
+            color: #6a6a8a;
+            font-size: 0.75rem;
+            letter-spacing: 0.05rem;
+            margin-bottom: 4px;
+        }
+        
+        .status-bar {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .status-bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+        
+        .status-bar-fill.stability {
+            background: linear-gradient(90deg, #3a6ea5, #6da9e4);
+        }
+        
+        .status-bar-fill.lucidity {
+            background: linear-gradient(90deg, #7b4b94, #b67ac3);
+        }
+        
+        .status-bar-fill.shape {
+            background: linear-gradient(90deg, #c9a227, #ffd700);
+        }
+        
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: #4a4a6a;
+            font-size: 0.75rem;
+            text-align: right;
+        }
+        
+        #controls-hint span {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #main-menu.hidden {
+            display: none;
+        }
+
+        #main-menu h1 {
+            color: #c9a227;
+            font-size: 4rem;
+            letter-spacing: 1rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 40px rgba(201, 162, 39, 0.4);
+        }
+
+        #main-menu .subtitle {
+            color: #6a6a8a;
+            font-style: italic;
+            margin-bottom: 4rem;
+            font-size: 1.1rem;
+        }
+
+        .menu-button {
+            background: transparent;
+            border: 1px solid rgba(201, 162, 39, 0.4);
+            color: #c9a227;
+            padding: 15px 60px;
+            margin: 10px;
+            font-family: 'Georgia', serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.2rem;
+        }
+
+        .menu-button:hover {
+            background: rgba(201, 162, 39, 0.1);
+            border-color: #c9a227;
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="main-menu">
+        <h1>DEATHBED</h1>
+        <p class="subtitle">"The sky learned how to love us. It just never learned how to stop."</p>
+        <button class="menu-button" id="start-game">BEGIN</button>
+        <button class="menu-button" id="controls-btn">CONTROLS</button>
+    </div>
+
+    <div id="loading-screen">
+        <h1>DEATHBED</h1>
+        <p>Loading...</p>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loading-progress"></div>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+    
+    <div id="ui-overlay">
+        <div id="status-panel">
+            <div class="status-item">
+                <div class="status-label">PHYSICAL STABILITY</div>
+                <div class="status-bar">
+                    <div class="status-bar-fill stability" id="stability-bar" style="width: 65%"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">LUCIDITY</div>
+                <div class="status-bar">
+                    <div class="status-bar-fill lucidity" id="lucidity-bar" style="width: 78%"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">SHAPE INTEGRITY</div>
+                <div class="status-bar">
+                    <div class="status-bar-fill shape" id="shape-bar" style="width: 52%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="interaction-prompt">[E] Interact</div>
+        
+        <div id="dialogue-box">
+            <div id="speaker-name">ADRIAN</div>
+            <div id="dialogue-text">How are we today?</div>
+            <div id="dialogue-continue">Press SPACE to continue</div>
+        </div>
+        
+        <div id="controls-hint">
+            <span>WASD - Move</span>
+            <span>Mouse - Look</span>
+            <span>E - Interact</span>
+            <span>SPACE - Continue Dialogue</span>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
