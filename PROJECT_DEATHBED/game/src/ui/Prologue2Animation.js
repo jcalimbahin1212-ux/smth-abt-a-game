@@ -639,6 +639,8 @@ export class Prologue2Animation {
     }
     
     skip() {
+        console.log('=== Prologue2Animation skip() called ===');
+        console.trace('Skip call stack:');
         this.complete();
     }
     
