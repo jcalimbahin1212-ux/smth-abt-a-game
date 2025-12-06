@@ -125,11 +125,28 @@ export class SceneManager {
         try {
             console.log('Creating scene instance...');
             const sceneInstance = SceneFactory();
+            
+            if (!sceneInstance) {
+                console.error('SceneFactory returned null/undefined!');
+                return;
+            }
+            
+            if (!sceneInstance.scene) {
+                console.error('sceneInstance.scene is null/undefined!');
+                return;
+            }
+            
             console.log('Scene instance created:', !!sceneInstance);
             console.log('Scene instance.scene:', !!sceneInstance?.scene);
             console.log('Scene children count:', sceneInstance?.scene?.children?.length);
             
             this.currentScene = sceneInstance.scene;
+            
+            if (!this.currentScene) {
+                console.error('CRITICAL: this.currentScene is still null after assignment!');
+                return;
+            }
+            
             console.log('this.currentScene set:', !!this.currentScene);
             
             // Determine starting position based on scene

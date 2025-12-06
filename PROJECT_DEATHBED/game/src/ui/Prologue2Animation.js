@@ -503,6 +503,14 @@ export class Prologue2Animation {
         try {
             const elapsed = (Date.now() - this.startTime) / 1000;
             
+            // Log elapsed time every 5 seconds
+            if (Math.floor(elapsed) % 5 === 0 && !this._lastLoggedTime || Math.floor(elapsed) !== this._lastLoggedTime) {
+                if (Math.floor(elapsed) % 5 === 0) {
+                    console.log(`Prologue2Animation elapsed: ${elapsed.toFixed(1)}s, entries displayed: ${this.displayedEntries.size}`);
+                    this._lastLoggedTime = Math.floor(elapsed);
+                }
+            }
+            
             // Update journal entries
             this.updateJournalEntries(elapsed);
             
@@ -517,6 +525,7 @@ export class Prologue2Animation {
             
             // Check completion
             if (elapsed >= this.duration / 1000) {
+                console.log('Prologue2Animation completing at', elapsed);
                 this.complete();
                 return;
             }
@@ -532,6 +541,7 @@ export class Prologue2Animation {
     updateJournalEntries(elapsed) {
         for (const entry of this.journalEntries) {
             if (elapsed >= entry.time && !this.displayedEntries.has(entry.time)) {
+                console.log(`Displaying entry at time ${entry.time}: "${entry.text.substring(0, 30)}..."`);
                 this.displayedEntries.add(entry.time);
                 this.addJournalEntry(entry.text, entry.style);
             }
@@ -633,7 +643,11 @@ export class Prologue2Animation {
     }
     
     complete() {
-        if (!this.isPlaying) return;
+        console.log('=== Prologue2Animation complete() called ===');
+        if (!this.isPlaying) {
+            console.log('Already not playing, returning');
+            return;
+        }
         this.isPlaying = false;
         
         if (this.animationFrame) {
@@ -646,7 +660,9 @@ export class Prologue2Animation {
         this.fadeOverlay.style.transition = 'opacity 1.5s ease';
         this.fadeOverlay.style.opacity = '1';
         
+        console.log('Starting 1.5s fade out timeout...');
         setTimeout(() => {
+            console.log('Fade complete, cleaning up...');
             if (this.renderer) this.renderer.dispose();
             if (this.scene) {
                 this.scene.traverse((object) => {
@@ -661,10 +677,12 @@ export class Prologue2Animation {
                 });
             }
             
+            console.log('Removing container...');
             this.container.remove();
             const styleEl = document.getElementById('prologue2-styles');
             if (styleEl) styleEl.remove();
             
+            console.log('Calling onComplete callback...');
             if (this.onComplete) this.onComplete();
         }, 1500);
     }

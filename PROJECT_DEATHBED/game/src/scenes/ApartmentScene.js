@@ -9,29 +9,39 @@ import { textureGenerator } from '../utils/TextureGenerator.js';
 
 export class ApartmentScene {
     constructor(game) {
+        console.log('=== ApartmentScene constructor START ===');
         this.game = game;
         this.scene = new THREE.Scene();
         this.interactables = [];
         this.npcs = [];
         
         try {
+            console.log('Getting textures...');
             // Get textures
             this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 130, g: 90, b: 55 } });
             this.fabricTexture = textureGenerator.getTexture('fabric', { color: { r: 100, g: 95, b: 85 } });
             
+            console.log('Setting up environment...');
             // Build the scene
             this.setupEnvironment();
+            console.log('Setting up lighting...');
             this.setupLighting();
+            console.log('Creating geometry...');
             this.createApartmentGeometry();
+            console.log('Creating furniture...');
             this.createFurniture();
+            console.log('Creating interactables...');
             this.createInteractables();
+            console.log('Creating atmospheric effects...');
             this.createAtmosphericEffects();
             
             console.log('ApartmentScene fully constructed, children:', this.scene.children.length);
         } catch (error) {
             console.error('ApartmentScene constructor error:', error);
+            console.error('Stack trace:', error.stack);
         }
         
+        console.log('=== ApartmentScene constructor END, scene valid:', !!this.scene, 'children:', this.scene?.children?.length);
         // Scene-specific bounds
         this.bounds = { minX: -6, maxX: 6, minZ: -5, maxZ: 5 };
     }

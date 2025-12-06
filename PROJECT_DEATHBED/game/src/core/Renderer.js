@@ -41,12 +41,15 @@ export class Renderer {
     render(scene, camera) {
         if (scene && camera) {
             this.renderer.render(scene, camera);
+            this._shownError = false; // Reset error flag on successful render
         } else {
-            // Log only once per second to avoid spam
-            const now = Date.now();
-            if (!this._lastNullLog || now - this._lastNullLog > 1000) {
-                console.warn('Renderer: scene or camera is null', { scene: !!scene, camera: !!camera });
-                this._lastNullLog = now;
+            // Show error prominently
+            if (!this._shownError) {
+                console.error('=== RENDER FAILED ===');
+                console.error('Scene is:', scene);
+                console.error('Camera is:', camera);
+                console.trace('Render call stack:');
+                this._shownError = true;
             }
         }
     }

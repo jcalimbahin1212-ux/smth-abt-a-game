@@ -12,19 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize the game
     const game = new Game();
     
-    // Handle main menu
-    const mainMenu = document.getElementById('main-menu');
-    const startButton = document.getElementById('start-game');
-    const controlsButton = document.getElementById('controls-btn');
-    
-    startButton.addEventListener('click', () => {
-        mainMenu.classList.add('hidden');
-        game.start();
-    });
-    
-    controlsButton.addEventListener('click', () => {
-        alert('Controls:\n\nWASD - Move\nMouse - Look Around\nE - Interact with objects\nSPACE - Continue dialogue\nESC - Pause');
-    });
+    // The HTML main-menu is hidden by the Game's loading screen
+    // The Game handles its own menu system, so we can hide the HTML menu
+    const htmlMainMenu = document.getElementById('main-menu');
+    if (htmlMainMenu) {
+        htmlMainMenu.style.display = 'none';
+    }
     
     // Handle window resize
     window.addEventListener('resize', () => {

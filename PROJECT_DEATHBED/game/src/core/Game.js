@@ -633,11 +633,14 @@ export class Game {
     }
     
     playPrologue2Animation() {
+        console.log('=== playPrologue2Animation called ===');
         // Play Adrian's Journal animation - documenting The Light
         this.prologue2Animation = new Prologue2Animation(this.audioManager, () => {
+            console.log('=== Prologue2Animation onComplete callback executing ===');
             // After Prologue 2, go to the apartment for interactive gameplay
             this.saveManager.setStage('act1_apartment');
             this.saveManager.save();
+            console.log('Calling playApartmentPrologue...');
             this.playApartmentPrologue();
         });
         
@@ -645,10 +648,15 @@ export class Game {
     }
     
     playApartmentPrologue() {
-        console.log('Starting apartment prologue...');
+        console.log('=== playApartmentPrologue called ===');
         // Hide menus
         if (this.mainMenu) this.mainMenu.style.display = 'none';
         if (this.startOverlay) this.startOverlay.style.display = 'none';
+        
+        // Debug: Check what's in the DOM
+        console.log('DOM check:');
+        console.log('- game-container children:', document.getElementById('game-container')?.children.length);
+        console.log('- body z-index overlays:', document.querySelectorAll('[style*="z-index"]').length);
         
         // Start apartment scene as interactive prologue
         this.startGameplay('apartment', () => {
@@ -716,7 +724,7 @@ export class Game {
         }
         
         this.isRunning = true;
-        console.log('Starting game loop...');
+        console.log('Starting game loop, isRunning:', this.isRunning);
         
         // Lock pointer for first-person controls
         this.renderer.domElement.addEventListener('click', () => {
@@ -726,12 +734,15 @@ export class Game {
         });
         
         // Load the scene
+        console.log('Loading scene:', sceneName);
         this.sceneManager.loadScene(sceneName, false);
+        console.log('Scene loaded, currentScene:', !!this.sceneManager.currentScene);
         
         // Start ambient soundtrack
         this.audioManager.playAmbient('somber_ambient');
         
         // Start game loop
+        console.log('Calling this.update() to start game loop');
         this.update();
     }
     
@@ -776,6 +787,15 @@ export class Game {
             this.dialogueSystem.update(this.deltaTime);
             this.particleSystem.update(this.deltaTime);
             this.uiManager.update(this.gameState);
+            
+            // Log render status once
+            if (!this._renderLogged) {
+                console.log('=== First Render Call ===');
+                console.log('sceneManager.currentScene:', this.sceneManager.currentScene);
+                console.log('sceneManager.camera:', this.sceneManager.camera);
+                console.log('currentScene is THREE.Scene?:', this.sceneManager.currentScene instanceof THREE.Scene);
+                this._renderLogged = true;
+            }
             
             // Render
             this.renderer.render(this.sceneManager.currentScene, this.sceneManager.camera);
