@@ -41,9 +41,13 @@ export class Renderer {
     render(scene, camera) {
         if (scene && camera) {
             this.renderer.render(scene, camera);
-        } else if (!this._loggedNull) {
-            console.warn('Renderer: scene or camera is null', { scene: !!scene, camera: !!camera });
-            this._loggedNull = true;
+        } else {
+            // Log only once per second to avoid spam
+            const now = Date.now();
+            if (!this._lastNullLog || now - this._lastNullLog > 1000) {
+                console.warn('Renderer: scene or camera is null', { scene: !!scene, camera: !!camera });
+                this._lastNullLog = now;
+            }
         }
     }
     

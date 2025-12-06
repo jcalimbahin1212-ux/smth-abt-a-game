@@ -99,70 +99,80 @@ export class SceneManager {
     }
     
     doLoadScene(sceneName) {
-        console.log('doLoadScene:', sceneName);
+        console.log('=== doLoadScene START ===', sceneName);
+        
         // Call onExit on current scene if it exists
         if (this.currentSceneData && this.currentSceneData.onExit) {
+            console.log('Calling onExit on previous scene');
             this.currentSceneData.onExit();
         }
         
         // Clean up current scene
         if (this.currentScene) {
+            console.log('Cleaning up current scene');
             this.cleanupScene();
         }
         
         // Create new scene
-        const SceneClass = this.scenes[sceneName];
-        console.log('Scene factory exists:', !!SceneClass);
-        if (SceneClass) {
-            try {
-                const sceneInstance = SceneClass();
-                console.log('Scene instance created:', !!sceneInstance, 'scene:', !!sceneInstance?.scene);
-                this.currentScene = sceneInstance.scene;
-            
-                // Determine starting position based on scene
-                const startPositions = {
-                    'apartment': new THREE.Vector3(0, 1.7, 3),
-                    'rooftop': new THREE.Vector3(-4, 1.7, 5),
-                    'convoy_shelter': new THREE.Vector3(0, 1.7, 5),
-                    'tanner_workshop': new THREE.Vector3(0, 1.7, 4),
-                    'exterior': new THREE.Vector3(0, 1.7, -5)
-                };
-            
-                const startPos = startPositions[sceneName] || new THREE.Vector3(0, 1.7, 5);
-                this.camera.position.copy(startPos);
-                
-                // Reset camera rotation to look forward
-                this.camera.rotation.set(0, 0, 0);
-            
-                // Setup player controller
-                this.playerController = new PlayerController(
-                    this.camera, 
-                    this.game.inputManager,
-                    this.currentScene
-                );
-            
-                // Set scene-specific bounds
-                if (sceneInstance.bounds) {
-                    this.playerController.setBounds(sceneInstance.bounds);
-                }
-            
-                // Store scene data reference
-                this.currentSceneData = sceneInstance;
-            
-                // Update game state
-                this.game.gameState.currentScene = sceneName;
-            
-                // Call onEnter if the scene has it
-                if (sceneInstance.onEnter) {
-                    sceneInstance.onEnter();
-                }
-            
-                console.log(`Loaded scene: ${sceneName}`);
-            } catch (error) {
-                console.error(`Error loading scene ${sceneName}:`, error);
-            }
-        } else {
+        const SceneFactory = this.scenes[sceneName];
+        console.log('Scene factory found:', !!SceneFactory);
+        
+        if (!SceneFactory) {
             console.error(`Scene not found: ${sceneName}`);
+            return;
+        }
+        
+        try {
+            console.log('Creating scene instance...');
+            const sceneInstance = SceneFactory();
+            console.log('Scene instance created:', !!sceneInstance);
+            console.log('Scene instance.scene:', !!sceneInstance?.scene);
+            console.log('Scene children count:', sceneInstance?.scene?.children?.length);
+            
+            this.currentScene = sceneInstance.scene;
+            console.log('this.currentScene set:', !!this.currentScene);
+            
+            // Determine starting position based on scene
+            const startPositions = {
+                'apartment': new THREE.Vector3(0, 1.7, 3),
+                'rooftop': new THREE.Vector3(-4, 1.7, 5),
+                'convoy_shelter': new THREE.Vector3(0, 1.7, 5),
+                'tanner_workshop': new THREE.Vector3(0, 1.7, 4),
+                'exterior': new THREE.Vector3(0, 1.7, -5)
+            };
+            
+            const startPos = startPositions[sceneName] || new THREE.Vector3(0, 1.7, 5);
+            this.camera.position.copy(startPos);
+            
+            // Reset camera rotation to look forward
+            this.camera.rotation.set(0, 0, 0);
+            
+            // Setup player controller
+            this.playerController = new PlayerController(
+                this.camera, 
+                this.game.inputManager,
+                this.currentScene
+            );
+            
+            // Set scene-specific bounds
+            if (sceneInstance.bounds) {
+                this.playerController.setBounds(sceneInstance.bounds);
+            }
+            
+            // Store scene data reference
+            this.currentSceneData = sceneInstance;
+            
+            // Update game state
+            this.game.gameState.currentScene = sceneName;
+            
+            // Call onEnter if the scene has it
+            if (sceneInstance.onEnter) {
+                sceneInstance.onEnter();
+            }
+            
+            console.log('=== doLoadScene COMPLETE ===', sceneName);
+        } catch (error) {
+            console.error(`Error loading scene ${sceneName}:`, error);
         }
     }
     

@@ -96,6 +96,8 @@ export class Prologue2Animation {
             transform: translateX(-50%);
             width: 60%;
             max-width: 700px;
+            max-height: 40%;
+            overflow-y: auto;
             background: rgba(30, 25, 20, 0.95);
             border: 2px solid rgba(139, 119, 89, 0.5);
             border-radius: 5px;

@@ -161,7 +161,7 @@ export class ExteriorScene {
         
         // Windows with light
         for (let i = 0; i < 3; i++) {
-            const window = new THREE.Mesh(
+            const shelterWindow = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.8, 0.6),
                 new THREE.MeshBasicMaterial({
                     color: 0xffaa66,
@@ -169,8 +169,8 @@ export class ExteriorScene {
                     opacity: 0.6
                 })
             );
-            window.position.set(-3 + i * 3, 2, 0.01);
-            this.scene.add(window);
+            shelterWindow.position.set(-3 + i * 3, 2, 0.01);
+            this.scene.add(shelterWindow);
         }
         
         // Workshop building

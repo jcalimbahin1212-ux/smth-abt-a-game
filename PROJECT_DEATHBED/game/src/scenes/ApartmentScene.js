@@ -14,17 +14,23 @@ export class ApartmentScene {
         this.interactables = [];
         this.npcs = [];
         
-        // Get textures
-        this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 130, g: 90, b: 55 } });
-        this.fabricTexture = textureGenerator.getTexture('fabric', { color: { r: 100, g: 95, b: 85 } });
-        
-        // Build the scene
-        this.setupEnvironment();
-        this.setupLighting();
-        this.createApartmentGeometry();
-        this.createFurniture();
-        this.createInteractables();
-        this.createAtmosphericEffects();
+        try {
+            // Get textures
+            this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 130, g: 90, b: 55 } });
+            this.fabricTexture = textureGenerator.getTexture('fabric', { color: { r: 100, g: 95, b: 85 } });
+            
+            // Build the scene
+            this.setupEnvironment();
+            this.setupLighting();
+            this.createApartmentGeometry();
+            this.createFurniture();
+            this.createInteractables();
+            this.createAtmosphericEffects();
+            
+            console.log('ApartmentScene fully constructed, children:', this.scene.children.length);
+        } catch (error) {
+            console.error('ApartmentScene constructor error:', error);
+        }
         
         // Scene-specific bounds
         this.bounds = { minX: -6, maxX: 6, minZ: -5, maxZ: 5 };
