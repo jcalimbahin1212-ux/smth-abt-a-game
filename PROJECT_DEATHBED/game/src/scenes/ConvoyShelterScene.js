@@ -41,12 +41,12 @@ export class ConvoyShelterScene {
     }
     
     setupLighting() {
-        // Brighter ambient light - softer blue tint
-        const ambientLight = new THREE.AmbientLight(0x2a2a4a, 0.5);
+        // Brighter ambient light - softer blue tint (increased from 0.5)
+        const ambientLight = new THREE.AmbientLight(0x3a3a5a, 0.7);
         this.scene.add(ambientLight);
         
-        // Main candle light (warm amber) - creates the focal point
-        const candleLight1 = new THREE.PointLight(0xffbb55, 1.8, 10, 1.8);
+        // Main candle light (warm amber) - creates the focal point (increased)
+        const candleLight1 = new THREE.PointLight(0xffbb55, 2.2, 12, 1.6);
         candleLight1.position.set(2, 1.2, 0);
         candleLight1.castShadow = true;
         candleLight1.shadow.mapSize.width = 512;
@@ -54,26 +54,31 @@ export class ConvoyShelterScene {
         this.scene.add(candleLight1);
         this.candleLight1 = candleLight1;
         
-        // Secondary candle - brighter
-        const candleLight2 = new THREE.PointLight(0xffbb55, 1.0, 6, 2);
+        // Secondary candle - brighter (increased)
+        const candleLight2 = new THREE.PointLight(0xffbb55, 1.4, 8, 2);
         candleLight2.position.set(-3, 0.8, -2);
         this.scene.add(candleLight2);
         this.candleLight2 = candleLight2;
         
-        // Softer blue rim light from covered window
-        const windowLight = new THREE.RectAreaLight(0x5a7aaa, 0.8, 2, 1.5);
+        // Additional candle near Luis
+        const candleLight3 = new THREE.PointLight(0xffaa44, 1.0, 5, 2);
+        candleLight3.position.set(-1, 0.6, 1);
+        this.scene.add(candleLight3);
+        
+        // Softer blue rim light from covered window (increased)
+        const windowLight = new THREE.RectAreaLight(0x6a8aba, 1.0, 2, 1.5);
         windowLight.position.set(5, 2, 0);
         windowLight.lookAt(0, 1.5, 0);
         this.scene.add(windowLight);
         
-        // Luis's warm glow (he's touched by the Light)
-        const luisGlow = new THREE.PointLight(0xd4b247, 0.5, 4, 2);
+        // Luis's warm glow (he's touched by the Light) - increased
+        const luisGlow = new THREE.PointLight(0xd4b247, 0.7, 5, 2);
         luisGlow.position.set(-2, 0.8, 2);
         this.scene.add(luisGlow);
         this.luisGlow = luisGlow;
         
-        // Additional fill light
-        const fillLight = new THREE.HemisphereLight(0x4a5a7a, 0x2a2030, 0.3);
+        // Additional fill light - increased
+        const fillLight = new THREE.HemisphereLight(0x5a6a8a, 0x3a3040, 0.5);
         this.scene.add(fillLight);
     }
     
@@ -424,6 +429,81 @@ export class ConvoyShelterScene {
         });
         waterContainer.addToScene(this.scene);
         this.interactables.push(waterContainer);
+        
+        // Supply Crate (near the stacked crates) - Contains radiation vest
+        const supplyCrate = new InteractableObject({
+            name: 'Supply Crate',
+            description: 'Scavenged supplies and protective gear.',
+            position: new THREE.Vector3(4.2, 0.5, -2.8),
+            size: new THREE.Vector3(0.8, 0.6, 0.8),
+            color: 0x5a5045,
+            interactionType: 'use',
+            onInteract: (game) => {
+                const hasVest = game.gameState.hasItem('radiationVest');
+                const isWearingVest = game.gameState.isVestEquipped();
+                
+                // Build choices dynamically
+                const choices = [];
+                
+                if (hasVest && !isWearingVest) {
+                    choices.push({
+                        text: "🦺 Equip Radiation Vest",
+                        action: () => {
+                            if (game.gameState.equipVest()) {
+                                game.dialogueSystem.showDialogue({
+                                    speaker: 'ADRIAN',
+                                    text: "The vest feels heavy, but it should protect me from The Light's influence for a while."
+                                });
+                                game.uiManager.showNotification('Radiation vest equipped!', 'info', 3000);
+                            }
+                        }
+                    });
+                }
+                
+                if (isWearingVest) {
+                    const durability = game.gameState.getVestDurabilityPercent();
+                    choices.push({
+                        text: `🦺 Unequip Vest (${Math.round(durability)}% durability)`,
+                        action: () => {
+                            game.gameState.unequipVest();
+                            game.dialogueSystem.showDialogue({
+                                speaker: 'ADRIAN',
+                                text: "I put the vest back in the crate. Better to save it for when I really need it."
+                            });
+                            game.uiManager.showNotification('Radiation vest stored.', 'info', 2000);
+                        }
+                    });
+                }
+                
+                choices.push({
+                    text: "Check supplies",
+                    action: () => {
+                        const waterCount = game.gameState.inventory.water || 0;
+                        const medCount = game.gameState.inventory.medication || 0;
+                        const vestText = hasVest ? "1 radiation vest" : (isWearingVest ? "Vest currently worn" : "No spare vests");
+                        
+                        game.dialogueSystem.showDialogue({
+                            speaker: 'INVENTORY',
+                            text: `Supplies remaining:\n• Water: ${waterCount} units\n• Medication: ${medCount} doses\n• ${vestText}`
+                        });
+                    }
+                });
+                
+                choices.push({ text: "Leave it", action: () => {} });
+                
+                game.dialogueSystem.showDialogue({
+                    speaker: 'SYSTEM',
+                    text: isWearingVest 
+                        ? "The supply crate. Your vest is currently equipped."
+                        : hasVest 
+                            ? "The supply crate. A radiation vest sits inside - essential for going outside."
+                            : "The supply crate. Almost empty now.",
+                    choices: choices
+                });
+            }
+        });
+        supplyCrate.addToScene(this.scene);
+        this.interactables.push(supplyCrate);
         
         // Covered window
         const windowInteract = new InteractableObject({

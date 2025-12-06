@@ -549,6 +549,20 @@ export class ExteriorScene {
     }
     
     onEnter() {
+        // Set player as outside - lucidity will increase!
+        if (this.game.gameState) {
+            this.game.gameState.setOutside(true);
+        }
+        
+        // Show warning notification
+        if (this.game.uiManager) {
+            if (!this.game.gameState.isVestEquipped()) {
+                this.game.uiManager.showNotification('⚠ The Light is dangerous here! Wear a vest or get inside quickly!', 'warning', 5000);
+            } else {
+                this.game.uiManager.showNotification('Your vest protects you from The Light\'s influence.', 'info', 3000);
+            }
+        }
+        
         // Add atmospheric particles when entering the scene
         if (this.game.particleSystem) {
             this.game.particleSystem.createDustParticles(this.scene, {
@@ -564,6 +578,13 @@ export class ExteriorScene {
                 range: { x: 25, y: 4, z: 25 },
                 color: 0xaaddff
             });
+        }
+    }
+    
+    onExit() {
+        // Set player as inside when leaving exterior
+        if (this.game.gameState) {
+            this.game.gameState.setOutside(false);
         }
     }
 }

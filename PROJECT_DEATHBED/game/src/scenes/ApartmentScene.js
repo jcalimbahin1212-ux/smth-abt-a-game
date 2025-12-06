@@ -38,34 +38,39 @@ export class ApartmentScene {
     
     setupLighting() {
         // Warmer, brighter ambient light
-        const ambientLight = new THREE.AmbientLight(0x3a3040, 0.6);
+        const ambientLight = new THREE.AmbientLight(0x4a4050, 0.8);
         this.scene.add(ambientLight);
         
-        // Main living room lamp - warm orange (brighter)
-        const lampLight = new THREE.PointLight(0xffbb77, 1.5, 15, 1.8);
+        // Main living room lamp - warm orange
+        const lampLight = new THREE.PointLight(0xffbb77, 2.0, 18, 1.6);
         lampLight.position.set(-2, 2, 0);
         lampLight.castShadow = true;
         this.scene.add(lampLight);
         this.lampLight = lampLight;
         
-        // Kitchen light (brighter)
-        const kitchenLight = new THREE.PointLight(0xffffee, 1.0, 10, 2);
+        // Secondary lamp for better coverage
+        const lamp2 = new THREE.PointLight(0xffaa66, 1.2, 10, 2);
+        lamp2.position.set(2, 1.8, 2);
+        this.scene.add(lamp2);
+        
+        // Kitchen light
+        const kitchenLight = new THREE.PointLight(0xffffee, 1.4, 12, 2);
         kitchenLight.position.set(4, 2.5, -2);
         this.scene.add(kitchenLight);
         
-        // Window - evening blue light from outside (softer)
-        const windowLight = new THREE.RectAreaLight(0x5577bb, 0.8, 3, 2);
+        // Window - evening blue light from outside
+        const windowLight = new THREE.RectAreaLight(0x6688cc, 1.0, 3, 2);
         windowLight.position.set(-6, 2, 0);
         windowLight.lookAt(0, 1.5, 0);
         this.scene.add(windowLight);
         
         // TV glow (subtle, blueish)
-        const tvGlow = new THREE.PointLight(0x7799ff, 0.4, 5, 2);
+        const tvGlow = new THREE.PointLight(0x7799ff, 0.6, 6, 2);
         tvGlow.position.set(0, 1.2, -4);
         this.scene.add(tvGlow);
         
         // Hemisphere light for overall fill
-        const hemiLight = new THREE.HemisphereLight(0x5a5a7a, 0x2a2030, 0.3);
+        const hemiLight = new THREE.HemisphereLight(0x6a6a8a, 0x3a3040, 0.5);
         this.scene.add(hemiLight);
     }
     
@@ -371,7 +376,7 @@ export class ApartmentScene {
         this.interactables.push(guitar);
         
         // Window
-        const window = new InteractableObject({
+        const apartmentWindow = new InteractableObject({
             name: 'Window',
             description: 'Evening view of the city.',
             position: new THREE.Vector3(-6, 2, 0),
@@ -397,8 +402,8 @@ export class ApartmentScene {
                 });
             }
         });
-        window.addToScene(this.scene);
-        this.interactables.push(window);
+        apartmentWindow.addToScene(this.scene);
+        this.interactables.push(apartmentWindow);
         
         // Kitchen counter
         const kitchen = new InteractableObject({

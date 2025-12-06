@@ -12,6 +12,19 @@ export class GameState {
             shapeIntegrity: 52
         };
         
+        // Adrian's (player) condition
+        this.playerCondition = {
+            lucidity: 0,          // Increases when outside, resets when inside
+            maxLucidity: 100,     // At max, death occurs
+            lucidityRate: 5,      // Rate of increase per second when outside
+            isWearingVest: false, // Radiation vest protects from lucidity increase
+            vestDurability: 100,  // Vest wears down while outside
+            vestDrainRate: 2      // How fast vest loses durability per second outside
+        };
+        
+        // Location state
+        this.isOutside = false;
+        
         // Story progress
         this.currentAct = 1;
         this.currentChapter = 1;
@@ -33,7 +46,8 @@ export class GameState {
             medication: 3,
             water: 5,
             coolingCloth: 2,
-            journal: true
+            journal: true,
+            radiationVest: 1  // Special vest to protect from The Light's lucidity effects
         };
         
         // Dialogue history
@@ -72,6 +86,88 @@ export class GameState {
         this.luisCondition.shapeIntegrity = Math.max(0, Math.min(100, 
             this.luisCondition.shapeIntegrity + amount));
         return this.luisCondition.shapeIntegrity;
+    }
+    
+    // === PLAYER LUCIDITY SYSTEM ===
+    // Lucidity increases when outside due to The Light's influence
+    // At max lucidity, the player dies
+    
+    setOutside(isOutside) {
+        this.isOutside = isOutside;
+        // Reset lucidity when entering shelter
+        if (!isOutside) {
+            this.playerCondition.lucidity = Math.max(0, this.playerCondition.lucidity - 20);
+        }
+    }
+    
+    updatePlayerLucidity(deltaTime) {
+        if (!this.isOutside) {
+            // Slowly recover lucidity when inside
+            this.playerCondition.lucidity = Math.max(0, 
+                this.playerCondition.lucidity - (2 * deltaTime));
+            return { lucidityChanged: false, died: false };
+        }
+        
+        // Outside - lucidity increases unless wearing vest
+        if (this.playerCondition.isWearingVest && this.playerCondition.vestDurability > 0) {
+            // Vest protects but drains durability
+            this.playerCondition.vestDurability = Math.max(0, 
+                this.playerCondition.vestDurability - (this.playerCondition.vestDrainRate * deltaTime));
+            
+            // Check if vest broke
+            if (this.playerCondition.vestDurability <= 0) {
+                this.playerCondition.isWearingVest = false;
+                return { lucidityChanged: false, died: false, vestBroken: true };
+            }
+            return { lucidityChanged: false, died: false };
+        }
+        
+        // No vest or vest broken - lucidity increases
+        this.playerCondition.lucidity = Math.min(
+            this.playerCondition.maxLucidity,
+            this.playerCondition.lucidity + (this.playerCondition.lucidityRate * deltaTime)
+        );
+        
+        // Check for death
+        if (this.playerCondition.lucidity >= this.playerCondition.maxLucidity) {
+            return { lucidityChanged: true, died: true };
+        }
+        
+        return { lucidityChanged: true, died: false };
+    }
+    
+    getPlayerLucidityPercent() {
+        return (this.playerCondition.lucidity / this.playerCondition.maxLucidity) * 100;
+    }
+    
+    getVestDurabilityPercent() {
+        return this.playerCondition.vestDurability;
+    }
+    
+    equipVest() {
+        if (this.hasItem('radiationVest')) {
+            this.playerCondition.isWearingVest = true;
+            this.playerCondition.vestDurability = 100;
+            this.useItem('radiationVest');
+            return true;
+        }
+        return false;
+    }
+    
+    unequipVest() {
+        if (this.playerCondition.isWearingVest) {
+            this.playerCondition.isWearingVest = false;
+            // Return vest to inventory if it has durability left
+            if (this.playerCondition.vestDurability > 0) {
+                this.addItem('radiationVest', 1);
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    isVestEquipped() {
+        return this.playerCondition.isWearingVest;
     }
     
     // Memory anchor methods
@@ -151,6 +247,8 @@ export class GameState {
     toJSON() {
         return {
             luisCondition: this.luisCondition,
+            playerCondition: this.playerCondition,
+            isOutside: this.isOutside,
             currentAct: this.currentAct,
             currentChapter: this.currentChapter,
             currentScene: this.currentScene,
@@ -165,6 +263,10 @@ export class GameState {
     
     fromJSON(data) {
         Object.assign(this.luisCondition, data.luisCondition);
+        if (data.playerCondition) {
+            Object.assign(this.playerCondition, data.playerCondition);
+        }
+        this.isOutside = data.isOutside || false;
         this.currentAct = data.currentAct;
         this.currentChapter = data.currentChapter;
         this.currentScene = data.currentScene;

@@ -28,11 +28,16 @@ export class AudioManager {
         document.addEventListener('keydown', () => this.initialize(), { once: true });
     }
     
-    initialize() {
-        if (this.isInitialized) return;
+    async initialize() {
+        if (this.isInitialized) return true;
         
         try {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Resume audio context if suspended (browser autoplay policy)
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
             
             // Create gain nodes
             this.masterGain = this.audioContext.createGain();
@@ -53,8 +58,10 @@ export class AudioManager {
             
             this.isInitialized = true;
             console.log('Audio system initialized');
+            return true;
         } catch (e) {
             console.warn('Web Audio API not supported:', e);
+            return false;
         }
     }
     

@@ -24,9 +24,9 @@ export class Renderer {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // Tone mapping for cinematic look - increased exposure for brightness
+        // Tone mapping for cinematic look
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1; // Increased from 0.8
+        this.renderer.toneMappingExposure = 1.1;
         
         // Output encoding
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -41,6 +41,9 @@ export class Renderer {
     render(scene, camera) {
         if (scene && camera) {
             this.renderer.render(scene, camera);
+        } else if (!this._loggedNull) {
+            console.warn('Renderer: scene or camera is null', { scene: !!scene, camera: !!camera });
+            this._loggedNull = true;
         }
     }
     
