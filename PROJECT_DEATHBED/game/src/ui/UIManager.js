@@ -159,6 +159,11 @@ export class UIManager {
     }
     
     updatePlayerLucidityUI(gameState) {
+        // Safety check - ensure UI elements exist
+        if (!this.playerLucidityContainer || !this.playerLucidityBar) {
+            return;
+        }
+        
         const isOutside = gameState.isOutside;
         const lucidityPercent = gameState.getPlayerLucidityPercent();
         const isWearingVest = gameState.isVestEquipped();
@@ -189,7 +194,7 @@ export class UIManager {
         }
         
         // Update vest indicator
-        if (isWearingVest) {
+        if (isWearingVest && this.vestIndicator && this.vestDurabilityBar) {
             this.vestIndicator.style.display = 'block';
             this.vestDurabilityBar.style.width = `${vestDurability}%`;
             
@@ -201,16 +206,18 @@ export class UIManager {
             } else {
                 this.vestDurabilityBar.style.background = 'linear-gradient(90deg, #6aff6a, #44ff44)';
             }
-        } else {
+        } else if (this.vestIndicator) {
             this.vestIndicator.style.display = 'none';
         }
         
         // Update warning overlay based on lucidity
-        if (lucidityPercent > 60 && isOutside) {
-            const intensity = (lucidityPercent - 60) / 40; // 0 to 1 as lucidity goes 60-100
-            this.warningOverlay.style.opacity = intensity * 0.6;
-        } else {
-            this.warningOverlay.style.opacity = '0';
+        if (this.warningOverlay) {
+            if (lucidityPercent > 60 && isOutside) {
+                const intensity = (lucidityPercent - 60) / 40; // 0 to 1 as lucidity goes 60-100
+                this.warningOverlay.style.opacity = intensity * 0.6;
+            } else {
+                this.warningOverlay.style.opacity = '0';
+            }
         }
     }
     

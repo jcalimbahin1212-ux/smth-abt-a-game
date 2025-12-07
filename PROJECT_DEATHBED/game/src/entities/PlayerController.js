@@ -47,10 +47,22 @@ export class PlayerController {
     }
     
     update(deltaTime) {
-        // Handle mouse look
-        if (this.inputManager.isPointerLocked) {
-            const mouseMovement = this.inputManager.getMouseMovement();
-            
+        // Debug: Log input state occasionally
+        if (!this._lastDebug || Date.now() - this._lastDebug > 2000) {
+            const w = this.inputManager.isKeyPressed('KeyW');
+            const a = this.inputManager.isKeyPressed('KeyA');
+            const s = this.inputManager.isKeyPressed('KeyS');
+            const d = this.inputManager.isKeyPressed('KeyD');
+            if (w || a || s || d) {
+                console.log('Movement keys:', { w, a, s, d }, 'Pointer locked:', this.inputManager.isPointerLocked);
+                this._lastDebug = Date.now();
+            }
+        }
+        
+        // Handle mouse look (only when pointer is locked)
+        const mouseMovement = this.inputManager.getMouseMovement();
+        
+        if (this.inputManager.isPointerLocked && (mouseMovement.x !== 0 || mouseMovement.y !== 0)) {
             this.yaw -= mouseMovement.x * this.lookSensitivity;
             this.pitch -= mouseMovement.y * this.lookSensitivity;
             
@@ -58,6 +70,18 @@ export class PlayerController {
             this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
             
             // Apply rotation
+            this.euler.set(this.pitch, this.yaw, 0);
+            this.camera.quaternion.setFromEuler(this.euler);
+        }
+        
+        // Allow arrow keys for looking around without pointer lock
+        if (this.inputManager.isKeyPressed('ArrowLeft')) {
+            this.yaw += 2 * deltaTime;
+            this.euler.set(this.pitch, this.yaw, 0);
+            this.camera.quaternion.setFromEuler(this.euler);
+        }
+        if (this.inputManager.isKeyPressed('ArrowRight')) {
+            this.yaw -= 2 * deltaTime;
             this.euler.set(this.pitch, this.yaw, 0);
             this.camera.quaternion.setFromEuler(this.euler);
         }

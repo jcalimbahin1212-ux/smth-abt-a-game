@@ -9,7 +9,9 @@ import { ConvoyShelterScene } from './ConvoyShelterScene.js';
 import { ApartmentScene } from './ApartmentScene.js';
 import { RooftopScene } from './RooftopScene.js';
 import { TannerWorkshopScene } from './TannerWorkshopScene.js';
+import { TannerHouseScene } from './TannerHouseScene.js';
 import { ExteriorScene } from './ExteriorScene.js';
+import { StreetScene } from './StreetScene.js';
 import { LightEntity } from '../entities/LightEntity.js';
 
 export class SceneManager {
@@ -48,7 +50,9 @@ export class SceneManager {
             'rooftop': () => new RooftopScene(this.game),
             'convoy_shelter': () => new ConvoyShelterScene(this.game),
             'tanner_workshop': () => new TannerWorkshopScene(this.game),
-            'exterior': () => new ExteriorScene(this.game)
+            'tanner_house': () => new TannerHouseScene(this.game),
+            'exterior': () => new ExteriorScene(this.game),
+            'street': () => new StreetScene(this.game)
         };
     }
     
@@ -155,7 +159,9 @@ export class SceneManager {
                 'rooftop': new THREE.Vector3(-4, 1.7, 5),
                 'convoy_shelter': new THREE.Vector3(0, 1.7, 5),
                 'tanner_workshop': new THREE.Vector3(0, 1.7, 4),
-                'exterior': new THREE.Vector3(0, 1.7, -5)
+                'tanner_house': new THREE.Vector3(-4, 1.7, 2),
+                'exterior': new THREE.Vector3(0, 1.7, -5),
+                'street': new THREE.Vector3(-5, 1.7, 3)
             };
             
             const startPos = startPositions[sceneName] || new THREE.Vector3(0, 1.7, 5);
@@ -215,6 +221,12 @@ export class SceneManager {
         // Update player controller
         if (this.playerController) {
             this.playerController.update(deltaTime);
+        } else {
+            // Log once if no player controller
+            if (!this._noControllerLogged) {
+                console.error('No player controller in SceneManager.update!');
+                this._noControllerLogged = true;
+            }
         }
         
         // Update scene-specific logic

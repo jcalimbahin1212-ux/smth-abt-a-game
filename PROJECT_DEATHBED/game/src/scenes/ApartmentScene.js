@@ -1,10 +1,12 @@
 /**
  * PROJECT DEATHBED - Apartment Scene (Prologue)
  * The brothers' apartment before the mutation - warm, cozy, normal life
+ * After waking up: expanded with bedrooms, Luis needs to be found
  */
 
 import * as THREE from 'three';
 import { InteractableObject } from '../entities/InteractableObject.js';
+import { NPCEntity } from '../entities/NPCEntity.js';
 import { textureGenerator } from '../utils/TextureGenerator.js';
 
 export class ApartmentScene {
@@ -14,6 +16,11 @@ export class ApartmentScene {
         this.scene = new THREE.Scene();
         this.interactables = [];
         this.npcs = [];
+        
+        // Check story state for waking up scenario
+        this.justWokeUp = game.storyState?.justWokeUp || false;
+        this.luisNeedsToBeFound = game.storyState?.luisNeedsToBeFound || false;
+        this.luisFoundInBedroom = false;
         
         try {
             console.log('Getting textures...');
@@ -30,10 +37,23 @@ export class ApartmentScene {
             this.createApartmentGeometry();
             console.log('Creating furniture...');
             this.createFurniture();
+            
+            // Create bedrooms if in wake-up mode
+            if (this.justWokeUp || this.luisNeedsToBeFound) {
+                console.log('Creating expanded bedrooms...');
+                this.createBedrooms();
+            }
+            
             console.log('Creating interactables...');
             this.createInteractables();
             console.log('Creating atmospheric effects...');
             this.createAtmosphericEffects();
+            
+            // Create Luis in bedroom if he needs to be found
+            if (this.luisNeedsToBeFound) {
+                console.log('Creating Luis in bedroom...');
+                this.createLuisInBedroom();
+            }
             
             console.log('ApartmentScene fully constructed, children:', this.scene.children.length);
         } catch (error) {
@@ -42,8 +62,10 @@ export class ApartmentScene {
         }
         
         console.log('=== ApartmentScene constructor END, scene valid:', !!this.scene, 'children:', this.scene?.children?.length);
-        // Scene-specific bounds
-        this.bounds = { minX: -6, maxX: 6, minZ: -5, maxZ: 5 };
+        // Scene-specific bounds - expanded if bedrooms exist
+        this.bounds = this.justWokeUp || this.luisNeedsToBeFound 
+            ? { minX: -10, maxX: 6, minZ: -8, maxZ: 8 }
+            : { minX: -6, maxX: 6, minZ: -5, maxZ: 5 };
     }
     
     setupEnvironment() {
@@ -465,6 +487,49 @@ export class ApartmentScene {
         });
         roofDoor.addToScene(this.scene);
         this.interactables.push(roofDoor);
+        
+        // Front door to exterior (only active after talking to Luis)
+        const frontDoor = new InteractableObject({
+            name: 'Front Door',
+            description: 'Exit to the street.',
+            position: new THREE.Vector3(0, 1.5, 5.8),
+            size: new THREE.Vector3(1, 2.5, 0.3),
+            color: 0x4a3a2a,
+            interactionType: 'use',
+            onInteract: (game) => {
+                // Check if player can go exterior
+                const canGo = this.luisFoundInBedroom || game.storyState?.canGoExterior;
+                
+                if (!canGo && this.luisNeedsToBeFound) {
+                    game.dialogueSystem.showDialogue({
+                        speaker: 'ADRIAN',
+                        text: "I should check on Luis first. He might be in his room."
+                    });
+                    return;
+                }
+                
+                game.dialogueSystem.showDialogue({
+                    speaker: 'SYSTEM',
+                    text: "Go outside?",
+                    choices: [
+                        {
+                            text: "Go to the street",
+                            action: () => {
+                                // If in wakeup scenario, go to street scene
+                                // Otherwise go to post-apocalyptic exterior
+                                const targetScene = (this.justWokeUp || this.luisNeedsToBeFound) 
+                                    ? 'street' 
+                                    : 'exterior';
+                                game.sceneManager.loadScene(targetScene);
+                            }
+                        },
+                        { text: "Stay inside", action: () => {} }
+                    ]
+                });
+            }
+        });
+        frontDoor.addToScene(this.scene);
+        this.interactables.push(frontDoor);
     }
     
     createAtmosphericEffects() {
@@ -490,6 +555,316 @@ export class ApartmentScene {
         
         this.dustParticles = new THREE.Points(particleGeometry, particleMaterial);
         this.scene.add(this.dustParticles);
+    }
+    
+    createBedrooms() {
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a4548,
+            roughness: 0.85,
+            metalness: 0.0
+        });
+        
+        // === ADRIAN'S BEDROOM (left side, where player wakes up) ===
+        // Floor extension
+        const bedroomFloor1 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 6),
+            new THREE.MeshStandardMaterial({
+                color: 0x6a5a4a,
+                map: this.woodTexture,
+                roughness: 0.75,
+                metalness: 0.05
+            })
+        );
+        bedroomFloor1.rotation.x = -Math.PI / 2;
+        bedroomFloor1.position.set(-10, 0, 0);
+        bedroomFloor1.receiveShadow = true;
+        this.scene.add(bedroomFloor1);
+        
+        // Bedroom walls
+        const backWall1 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 4),
+            wallMaterial
+        );
+        backWall1.position.set(-10, 2, -3);
+        this.scene.add(backWall1);
+        
+        const leftWall1 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 4),
+            wallMaterial
+        );
+        leftWall1.position.set(-13, 2, 0);
+        leftWall1.rotation.y = Math.PI / 2;
+        this.scene.add(leftWall1);
+        
+        // Adrian's bed
+        const bed1 = new THREE.Group();
+        const bedFrame1 = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 0.4, 2.2),
+            new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.8 })
+        );
+        bedFrame1.position.y = 0.2;
+        bed1.add(bedFrame1);
+        
+        const mattress1 = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.2, 2),
+            new THREE.MeshStandardMaterial({ color: 0x5a5565, roughness: 0.9 })
+        );
+        mattress1.position.y = 0.5;
+        bed1.add(mattress1);
+        
+        const pillow1 = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.15, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0x7a7585, roughness: 0.9 })
+        );
+        pillow1.position.set(0, 0.65, -0.8);
+        bed1.add(pillow1);
+        
+        // Messy blanket
+        const blanket1 = new THREE.Mesh(
+            new THREE.BoxGeometry(1.5, 0.1, 1.2),
+            new THREE.MeshStandardMaterial({ color: 0x3a4555, roughness: 0.95 })
+        );
+        blanket1.position.set(0.2, 0.55, 0.3);
+        blanket1.rotation.z = 0.1;
+        bed1.add(blanket1);
+        
+        bed1.position.set(-11, 0, -1);
+        this.scene.add(bed1);
+        
+        // Nightstand
+        const nightstand1 = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 0.5, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.7 })
+        );
+        nightstand1.position.set(-9.5, 0.25, -1.5);
+        this.scene.add(nightstand1);
+        
+        // Bedroom light
+        const bedroomLight1 = new THREE.PointLight(0xffbb77, 0.8, 8, 2);
+        bedroomLight1.position.set(-10, 2.5, 0);
+        this.scene.add(bedroomLight1);
+        
+        // === LUIS'S BEDROOM (extended back area) ===
+        // Floor extension
+        const bedroomFloor2 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 6),
+            new THREE.MeshStandardMaterial({
+                color: 0x6a5a4a,
+                map: this.woodTexture,
+                roughness: 0.75,
+                metalness: 0.05
+            })
+        );
+        bedroomFloor2.rotation.x = -Math.PI / 2;
+        bedroomFloor2.position.set(-3, 0, -9);
+        bedroomFloor2.receiveShadow = true;
+        this.scene.add(bedroomFloor2);
+        
+        // Bedroom walls
+        const backWall2 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 4),
+            wallMaterial
+        );
+        backWall2.position.set(-3, 2, -12);
+        this.scene.add(backWall2);
+        
+        const rightWall2 = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 4),
+            wallMaterial
+        );
+        rightWall2.position.set(0, 2, -9);
+        rightWall2.rotation.y = -Math.PI / 2;
+        this.scene.add(rightWall2);
+        
+        // Luis's bed
+        const bed2 = new THREE.Group();
+        const bedFrame2 = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 0.4, 2.2),
+            new THREE.MeshStandardMaterial({ color: 0x2a3a4a, roughness: 0.8 })
+        );
+        bedFrame2.position.y = 0.2;
+        bed2.add(bedFrame2);
+        
+        const mattress2 = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.2, 2),
+            new THREE.MeshStandardMaterial({ color: 0x4a5565, roughness: 0.9 })
+        );
+        mattress2.position.y = 0.5;
+        bed2.add(mattress2);
+        
+        const pillow2 = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.15, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0x6a7585, roughness: 0.9 })
+        );
+        pillow2.position.set(0, 0.65, -0.8);
+        bed2.add(pillow2);
+        
+        bed2.position.set(-4, 0, -10);
+        this.scene.add(bed2);
+        
+        // Luis's desk
+        const desk = new THREE.Mesh(
+            new THREE.BoxGeometry(1.5, 0.8, 0.6),
+            new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.7 })
+        );
+        desk.position.set(-1.5, 0.4, -10);
+        this.scene.add(desk);
+        
+        // Desk light
+        const deskLight = new THREE.PointLight(0xaabbff, 0.5, 4, 2);
+        deskLight.position.set(-1.5, 1, -10);
+        this.scene.add(deskLight);
+        
+        // Bedroom light
+        const bedroomLight2 = new THREE.PointLight(0xffbb77, 0.6, 8, 2);
+        bedroomLight2.position.set(-3, 2.5, -9);
+        this.scene.add(bedroomLight2);
+        
+        // Door frame between living room and Luis's room
+        const doorFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.5, 1.2),
+            new THREE.MeshStandardMaterial({ color: 0x3a3a40 })
+        );
+        doorFrame.position.set(-3, 1.25, -6);
+        this.scene.add(doorFrame);
+    }
+    
+    createLuisInBedroom() {
+        // Luis is sitting at his desk in his bedroom
+        this.luis = new NPCEntity({
+            name: 'Luis',
+            position: new THREE.Vector3(-2, 0, -9.5),
+            color: 0x5a6a7a,
+            height: 1.6,
+            glowColor: 0xffffee // Slight glow - touched by the Light
+        });
+        
+        this.luis.addToScene(this.scene);
+        this.npcs.push(this.luis);
+        
+        this.luis.setDialogue({
+            greeting: {
+                text: "Adrian! You're finally awake. I was worried... You were mumbling in your sleep. Something about falling.",
+                responses: [
+                    { text: "I had a strange dream...", next: 'dream' },
+                    { text: "Are you okay, Luis?", next: 'luis_ok' }
+                ]
+            },
+            dream: {
+                text: "A dream? You looked terrified. What was it about?",
+                responses: [
+                    { text: "I was falling... from a rooftop.", next: 'falling' },
+                    { text: "I don't want to talk about it.", next: 'avoid' }
+                ]
+            },
+            luis_ok: {
+                text: "Me? I'm fine. Better than fine, actually. Since that light touched me... I feel different. Stronger. Like I can see things more clearly.",
+                responses: [
+                    { text: "What do you mean, see things?", next: 'see_things' },
+                    { text: "We should go outside.", next: 'go_outside' }
+                ]
+            },
+            falling: {
+                text: "Falling? That sounds awful. But you're safe now. Just a nightmare. Though... things have been strange since that light. Maybe it affected you too.",
+                responses: [
+                    { text: "What happened after the light?", next: 'after_light' },
+                    { text: "Let's go outside and clear our heads.", next: 'go_outside' }
+                ]
+            },
+            avoid: {
+                text: "That's okay. You don't have to tell me. But when you're ready... I'm here. I found my vest, by the way. Want to go outside? The fresh air might help.",
+                responses: [
+                    { text: "Yeah, let's go.", next: 'go_outside' }
+                ]
+            },
+            see_things: {
+                text: "I can't explain it. It's like... I can sense when things are wrong. When someone is in danger. It's overwhelming sometimes, but also... beautiful.",
+                responses: [
+                    { text: "That sounds scary.", next: 'scary' },
+                    { text: "Let's go outside.", next: 'go_outside' }
+                ]
+            },
+            after_light: {
+                text: "I blacked out for a bit. When I woke up, everything felt different. The world seems... more alive. And I found my vest - remember the one I lost? It was just there, on my chair.",
+                responses: [
+                    { text: "That's weird.", next: 'vest' },
+                    { text: "Let's go outside.", next: 'go_outside' }
+                ]
+            },
+            scary: {
+                text: "Maybe a little. But I feel like I'm meant to help people now. To protect them. Starting with you, big brother.",
+                responses: [
+                    { text: "I appreciate that.", next: 'go_outside' }
+                ]
+            },
+            vest: {
+                text: "Yeah, it is weird. But I'm not complaining. I always loved that vest. Mom gave it to me. Hey, want to go outside? Maybe see if our friends are around?",
+                responses: [
+                    { text: "Sure, let's go.", next: 'go_outside' }
+                ]
+            },
+            go_outside: {
+                text: "Great! I'll meet you outside. I want to test something anyway.",
+                effect: (game) => {
+                    this.luisFoundInBedroom = true;
+                    if (game.storyState) {
+                        game.storyState.luisFoundInBedroom = true;
+                        game.storyState.canGoExterior = true;
+                    }
+                    // Show notification
+                    if (game.uiManager) {
+                        game.uiManager.showNotification('Go to the exterior through the front door', 3000);
+                    }
+                }
+            }
+        });
+        
+        // Luis bedroom interactable
+        const luisInteractable = new InteractableObject({
+            name: 'Luis',
+            description: 'Your brother Luis. He seems different.',
+            position: new THREE.Vector3(-2, 0.8, -9.5),
+            size: new THREE.Vector3(0.6, 1.6, 0.6),
+            interactionType: 'talk',
+            invisible: true,
+            onInteract: (game) => {
+                const dialogue = this.luis.dialogueTree;
+                if (dialogue && dialogue.greeting) {
+                    game.dialogueSystem.showDialogue({
+                        speaker: 'LUIS',
+                        text: dialogue.greeting.text,
+                        choices: dialogue.greeting.responses?.map(r => ({
+                            text: r.text,
+                            action: () => this.handleLuisDialogue(game, r.next)
+                        }))
+                    });
+                }
+            }
+        });
+        luisInteractable.addToScene(this.scene);
+        this.interactables.push(luisInteractable);
+    }
+    
+    handleLuisDialogue(game, nextKey) {
+        if (!nextKey) return;
+        
+        const dialogue = this.luis.dialogueTree[nextKey];
+        if (!dialogue) return;
+        
+        // Execute effect if present
+        if (dialogue.effect) {
+            dialogue.effect(game);
+        }
+        
+        // Show next dialogue
+        game.dialogueSystem.showDialogue({
+            speaker: 'LUIS',
+            text: dialogue.text,
+            choices: dialogue.responses?.map(r => ({
+                text: r.text,
+                action: () => this.handleLuisDialogue(game, r.next)
+            }))
+        });
     }
     
     update(deltaTime) {

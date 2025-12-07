@@ -36,6 +36,15 @@ export class Game {
         this.particleSystem = new ParticleSystem();
         this.saveManager = new SaveManager();
         
+        // Story state for tracking narrative progress
+        this.storyState = {
+            luisNeedsToBeFound: false,
+            justWokeUp: false,
+            luisFoundInBedroom: false,
+            canGoExterior: false,
+            prologueComplete: false
+        };
+        
         // Initialize game systems
         this.sceneManager = new SceneManager(this);
         this.interactionSystem = new InteractionSystem(this);
@@ -295,6 +304,48 @@ export class Game {
     }
     
     showMainMenu() {
+        // Add enhanced fonts if not already loaded
+        if (!document.getElementById('menu-fonts')) {
+            const fontLink = document.createElement('link');
+            fontLink.id = 'menu-fonts';
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap';
+            fontLink.rel = 'stylesheet';
+            document.head.appendChild(fontLink);
+        }
+        
+        // Add menu animations
+        if (!document.getElementById('menu-styles')) {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'menu-styles';
+            styleEl.textContent = `
+                @keyframes titleGlow {
+                    0%, 100% { 
+                        text-shadow: 0 0 40px rgba(201, 162, 39, 0.5), 0 0 80px rgba(201, 162, 39, 0.3);
+                    }
+                    50% { 
+                        text-shadow: 0 0 60px rgba(201, 162, 39, 0.7), 0 0 120px rgba(201, 162, 39, 0.4);
+                    }
+                }
+                @keyframes subtitleFloat {
+                    0%, 100% { transform: translateY(0); opacity: 0.7; }
+                    50% { transform: translateY(-3px); opacity: 0.9; }
+                }
+                @keyframes borderGlow {
+                    0%, 100% { box-shadow: 0 0 20px rgba(201, 162, 39, 0.3); }
+                    50% { box-shadow: 0 0 40px rgba(201, 162, 39, 0.5); }
+                }
+                @keyframes fadeSlideIn {
+                    0% { opacity: 0; transform: translateY(20px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes starTwinkle {
+                    0%, 100% { opacity: 0.3; }
+                    50% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(styleEl);
+        }
+        
         this.mainMenu = document.createElement('div');
         this.mainMenu.id = 'main-menu';
         this.mainMenu.style.cssText = `
@@ -303,43 +354,79 @@ export class Game {
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(ellipse at center, #0d0d1a 0%, #000000 100%);
+            background: radial-gradient(ellipse at center bottom, #0a0a15 0%, #020205 60%, #000000 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 2000;
-            font-family: 'Georgia', serif;
+            font-family: 'Cinzel', 'Georgia', serif;
+            overflow: hidden;
         `;
         
-        // Add background particles
+        // Add background particles and stars
         this.createMenuParticles();
+        this.createMenuStars();
+        
+        // Add vignette overlay
+        const vignette = document.createElement('div');
+        vignette.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 0;
+        `;
+        this.mainMenu.appendChild(vignette);
         
         // Title with enhanced effects
         const title = document.createElement('h1');
         title.textContent = 'PROJECT DEATHBED';
         title.style.cssText = `
             color: #c9a227;
-            font-size: 4em;
-            margin-bottom: 0.2em;
-            text-shadow: 0 0 50px rgba(201, 162, 39, 0.8);
-            letter-spacing: 0.15em;
-            animation: titleGlow 3s ease-in-out infinite;
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-size: 4.5em;
+            font-weight: 600;
+            margin-bottom: 0.1em;
+            text-shadow: 0 0 60px rgba(201, 162, 39, 0.6), 0 0 120px rgba(201, 162, 39, 0.3);
+            letter-spacing: 0.12em;
+            animation: titleGlow 4s ease-in-out infinite, fadeSlideIn 1.5s ease-out;
             position: relative;
             z-index: 1;
+            text-transform: uppercase;
         `;
         this.mainMenu.appendChild(title);
+        
+        // Decorative line
+        const decorLine = document.createElement('div');
+        decorLine.style.cssText = `
+            width: 300px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.5), transparent);
+            margin-bottom: 1em;
+            position: relative;
+            z-index: 1;
+            animation: fadeSlideIn 1.8s ease-out;
+        `;
+        this.mainMenu.appendChild(decorLine);
         
         // Subtitle
         const subtitle = document.createElement('p');
         subtitle.textContent = 'A story of two brothers at the end of all things';
         subtitle.style.cssText = `
-            color: #6a7a8a;
-            font-size: 1.2em;
-            margin-bottom: 2em;
+            color: #7a8a9a;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.3em;
+            font-weight: 300;
+            margin-bottom: 2.5em;
             font-style: italic;
             position: relative;
             z-index: 1;
+            letter-spacing: 0.1em;
+            animation: subtitleFloat 5s ease-in-out infinite, fadeSlideIn 2s ease-out;
         `;
         this.mainMenu.appendChild(subtitle);
         
@@ -434,36 +521,41 @@ export class Game {
     
     createMenuButton(title, subtitle, isPrimary) {
         const btn = document.createElement('button');
-        btn.innerHTML = `<strong>${title}</strong><br><small style="color: ${isPrimary ? '#e8d59a' : '#6a7a8a'}">${subtitle}</small>`;
+        btn.innerHTML = `<strong>${title}</strong><br><small style="color: ${isPrimary ? '#d8c8a0' : '#6a7a8a'}; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; font-size: 0.8em;">${subtitle}</small>`;
         btn.style.cssText = `
             background: ${isPrimary 
-                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.3), rgba(201, 162, 39, 0.1))' 
-                : 'rgba(60, 60, 80, 0.2)'};
-            border: ${isPrimary ? '2px' : '1px'} solid ${isPrimary ? '#c9a227' : '#4a5a6a'};
+                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(201, 162, 39, 0.05))' 
+                : 'rgba(40, 45, 60, 0.2)'};
+            border: ${isPrimary ? '2px' : '1px'} solid ${isPrimary ? 'rgba(201, 162, 39, 0.6)' : 'rgba(100, 120, 140, 0.3)'};
+            border-radius: 2px;
             color: ${isPrimary ? '#c9a227' : '#8a9aaa'};
-            padding: ${isPrimary ? '1.5em 3em' : '1em 2em'};
-            font-size: ${isPrimary ? '1.3em' : '1.1em'};
+            padding: ${isPrimary ? '1.2em 2.5em' : '0.9em 2em'};
+            font-size: ${isPrimary ? '1.2em' : '1em'};
+            font-family: 'Cinzel', 'Georgia', serif;
+            font-weight: 500;
+            letter-spacing: 0.15em;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 350px;
-            font-family: 'Georgia', serif;
-            ${isPrimary ? 'animation: borderGlow 2s ease-in-out infinite;' : ''}
+            transition: all 0.4s ease;
+            min-width: 320px;
+            ${isPrimary ? 'animation: borderGlow 3s ease-in-out infinite, fadeSlideIn 2.2s ease-out;' : 'animation: fadeSlideIn 2.4s ease-out;'}
         `;
         
         btn.onmouseover = () => {
             btn.style.background = isPrimary 
-                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.5), rgba(201, 162, 39, 0.3))'
-                : 'rgba(80, 80, 100, 0.3)';
-            btn.style.transform = 'scale(1.05)';
-            btn.style.boxShadow = `0 0 30px rgba(${isPrimary ? '201, 162, 39' : '100, 120, 140'}, 0.4)`;
+                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.35), rgba(201, 162, 39, 0.15))'
+                : 'rgba(60, 70, 90, 0.3)';
+            btn.style.transform = 'scale(1.03)';
+            btn.style.boxShadow = `0 0 40px rgba(${isPrimary ? '201, 162, 39' : '100, 120, 140'}, 0.4)`;
+            btn.style.borderColor = isPrimary ? 'rgba(201, 162, 39, 0.9)' : 'rgba(100, 120, 140, 0.5)';
         };
         
         btn.onmouseout = () => {
             btn.style.background = isPrimary 
-                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.3), rgba(201, 162, 39, 0.1))'
-                : 'rgba(60, 60, 80, 0.2)';
+                ? 'linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(201, 162, 39, 0.05))'
+                : 'rgba(40, 45, 60, 0.2)';
             btn.style.transform = 'scale(1)';
-            btn.style.boxShadow = isPrimary ? '0 0 20px rgba(201, 162, 39, 0.3)' : 'none';
+            btn.style.boxShadow = isPrimary ? '0 0 20px rgba(201, 162, 39, 0.2)' : 'none';
+            btn.style.borderColor = isPrimary ? 'rgba(201, 162, 39, 0.6)' : 'rgba(100, 120, 140, 0.3)';
         };
         
         return btn;
@@ -478,6 +570,7 @@ export class Game {
             width: 100%;
             height: 100%;
             pointer-events: none;
+            z-index: 1;
         `;
         this.mainMenu.appendChild(canvas);
         
@@ -486,14 +579,15 @@ export class Game {
         canvas.height = window.innerHeight;
         
         const particles = [];
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 80; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 2.5 + 0.5,
-                speedX: (Math.random() - 0.5) * 0.3,
-                speedY: -Math.random() * 0.5 - 0.1,
-                opacity: Math.random() * 0.5 + 0.1
+                size: Math.random() * 2 + 0.5,
+                speedX: (Math.random() - 0.5) * 0.2,
+                speedY: -Math.random() * 0.4 - 0.1,
+                opacity: Math.random() * 0.4 + 0.1,
+                phase: Math.random() * Math.PI * 2
             });
         }
         
@@ -502,21 +596,29 @@ export class Game {
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            const time = Date.now() * 0.001;
+            
             particles.forEach(p => {
                 p.x += p.speedX;
                 p.y += p.speedY;
+                
+                // Gentle horizontal sway
+                p.x += Math.sin(time + p.phase) * 0.1;
                 
                 if (p.y < -10) {
                     p.y = canvas.height + 10;
                     p.x = Math.random() * canvas.width;
                 }
                 
-                const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-                gradient.addColorStop(0, `rgba(201, 162, 39, ${p.opacity})`);
+                const pulsingOpacity = p.opacity * (0.8 + Math.sin(time * 2 + p.phase) * 0.2);
+                
+                const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+                gradient.addColorStop(0, `rgba(201, 162, 39, ${pulsingOpacity})`);
+                gradient.addColorStop(0.5, `rgba(201, 162, 39, ${pulsingOpacity * 0.3})`);
                 gradient.addColorStop(1, `rgba(201, 162, 39, 0)`);
                 
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
                 ctx.fillStyle = gradient;
                 ctx.fill();
             });
@@ -525,6 +627,43 @@ export class Game {
         };
         
         animate();
+    }
+    
+    createMenuStars() {
+        const starsContainer = document.createElement('div');
+        starsContainer.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        `;
+        
+        // Create twinkling stars
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            const size = Math.random() * 2 + 1;
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const delay = Math.random() * 5;
+            const duration = 3 + Math.random() * 4;
+            
+            star.style.cssText = `
+                position: absolute;
+                left: ${x}%;
+                top: ${y}%;
+                width: ${size}px;
+                height: ${size}px;
+                background: radial-gradient(circle, rgba(200, 210, 230, 0.9), transparent);
+                border-radius: 50%;
+                animation: starTwinkle ${duration}s ease-in-out ${delay}s infinite;
+            `;
+            starsContainer.appendChild(star);
+        }
+        
+        this.mainMenu.appendChild(starsContainer);
     }
     
     getStageDisplayName(stage) {
@@ -727,16 +866,37 @@ export class Game {
         console.log('Starting game loop, isRunning:', this.isRunning);
         
         // Lock pointer for first-person controls
-        this.renderer.domElement.addEventListener('click', () => {
-            if (!this.dialogueSystem.isActive) {
-                this.renderer.domElement.requestPointerLock();
+        const gameRenderer = this.renderer.domElement;
+        gameRenderer.addEventListener('click', () => {
+            if (!this.dialogueSystem.isActive && document.pointerLockElement !== gameRenderer) {
+                gameRenderer.requestPointerLock().catch(err => console.log('Pointer lock failed:', err));
             }
         });
+        
+        // Auto-request pointer lock after a short delay
+        setTimeout(() => {
+            if (document.pointerLockElement !== gameRenderer) {
+                gameRenderer.requestPointerLock().catch(err => console.log('Auto pointer lock failed:', err));
+            }
+        }, 100);
         
         // Load the scene
         console.log('Loading scene:', sceneName);
         this.sceneManager.loadScene(sceneName, false);
         console.log('Scene loaded, currentScene:', !!this.sceneManager.currentScene);
+        console.log('Scene children:', this.sceneManager.currentScene?.children?.length);
+        console.log('Camera position:', this.sceneManager.camera?.position);
+        
+        // DEBUG: Force immediate render test
+        if (this.sceneManager.currentScene && this.sceneManager.camera) {
+            console.log('DEBUG: Attempting immediate test render...');
+            this.renderer.render(this.sceneManager.currentScene, this.sceneManager.camera);
+            console.log('DEBUG: Test render completed');
+        } else {
+            console.error('DEBUG: Cannot render - scene or camera is null!');
+            console.error('Scene:', this.sceneManager.currentScene);
+            console.error('Camera:', this.sceneManager.camera);
+        }
         
         // Start ambient soundtrack
         this.audioManager.playAmbient('somber_ambient');

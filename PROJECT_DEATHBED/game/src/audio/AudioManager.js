@@ -281,6 +281,24 @@ export class AudioManager {
             case 'footstep':
                 this.playFootstepSound();
                 break;
+            case 'door_open':
+                this.playDoorOpenSound();
+                break;
+            case 'door_close':
+                this.playDoorCloseSound();
+                break;
+            case 'door_creak':
+                this.playDoorCreakSound();
+                break;
+            case 'ambient_wind':
+                this.playAmbientWindSound();
+                break;
+            case 'ui_hover':
+                this.playUIHoverSound();
+                break;
+            case 'ui_click':
+                this.playUIClickSound();
+                break;
         }
     }
     
@@ -374,25 +392,232 @@ export class AudioManager {
     }
     
     playFootstepSound() {
-        const osc = this.audioContext.createOscillator();
+        // More realistic footstep with layered sounds
+        const now = this.audioContext.currentTime;
+        
+        // Low thump
+        const thump = this.audioContext.createOscillator();
+        const thumpGain = this.audioContext.createGain();
+        const thumpFilter = this.audioContext.createBiquadFilter();
+        
+        thump.type = 'sine';
+        thump.frequency.value = 60 + Math.random() * 30;
+        
+        thumpFilter.type = 'lowpass';
+        thumpFilter.frequency.value = 120;
+        
+        thumpGain.gain.setValueAtTime(0.15, now);
+        thumpGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        
+        thump.connect(thumpFilter);
+        thumpFilter.connect(thumpGain);
+        thumpGain.connect(this.sfxGain);
+        
+        thump.start(now);
+        thump.stop(now + 0.12);
+        
+        // High click/scuff
+        const scuff = this.audioContext.createOscillator();
+        const scuffGain = this.audioContext.createGain();
+        const scuffFilter = this.audioContext.createBiquadFilter();
+        
+        scuff.type = 'sawtooth';
+        scuff.frequency.value = 800 + Math.random() * 400;
+        
+        scuffFilter.type = 'highpass';
+        scuffFilter.frequency.value = 600;
+        
+        scuffGain.gain.setValueAtTime(0.03, now);
+        scuffGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        
+        scuff.connect(scuffFilter);
+        scuffFilter.connect(scuffGain);
+        scuffGain.connect(this.sfxGain);
+        
+        scuff.start(now + 0.02);
+        scuff.stop(now + 0.07);
+    }
+    
+    playDoorOpenSound() {
+        const now = this.audioContext.currentTime;
+        
+        // Door mechanism click
+        const click = this.audioContext.createOscillator();
+        const clickGain = this.audioContext.createGain();
+        
+        click.type = 'square';
+        click.frequency.value = 200;
+        
+        clickGain.gain.setValueAtTime(0.1, now);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+        
+        click.connect(clickGain);
+        clickGain.connect(this.sfxGain);
+        click.start(now);
+        click.stop(now + 0.03);
+        
+        // Creak sound
+        setTimeout(() => this.playDoorCreakSound(), 50);
+    }
+    
+    playDoorCloseSound() {
+        const now = this.audioContext.currentTime;
+        
+        // Heavy thud
+        const thud = this.audioContext.createOscillator();
+        const thudGain = this.audioContext.createGain();
+        const thudFilter = this.audioContext.createBiquadFilter();
+        
+        thud.type = 'sine';
+        thud.frequency.setValueAtTime(100, now);
+        thud.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        
+        thudFilter.type = 'lowpass';
+        thudFilter.frequency.value = 200;
+        
+        thudGain.gain.setValueAtTime(0.25, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        thud.connect(thudFilter);
+        thudFilter.connect(thudGain);
+        thudGain.connect(this.sfxGain);
+        
+        thud.start(now);
+        thud.stop(now + 0.2);
+        
+        // Latch click
+        const latch = this.audioContext.createOscillator();
+        const latchGain = this.audioContext.createGain();
+        
+        latch.type = 'square';
+        latch.frequency.value = 800;
+        
+        latchGain.gain.setValueAtTime(0.05, now + 0.1);
+        latchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        
+        latch.connect(latchGain);
+        latchGain.connect(this.sfxGain);
+        
+        latch.start(now + 0.1);
+        latch.stop(now + 0.13);
+    }
+    
+    playDoorCreakSound() {
+        const now = this.audioContext.currentTime;
+        const duration = 0.4 + Math.random() * 0.3;
+        
+        // Creaky oscillation
+        const osc1 = this.audioContext.createOscillator();
+        const osc2 = this.audioContext.createOscillator();
         const gain = this.audioContext.createGain();
         const filter = this.audioContext.createBiquadFilter();
         
-        osc.type = 'sine';
-        osc.frequency.value = 80 + Math.random() * 20;
+        osc1.type = 'sawtooth';
+        osc2.type = 'triangle';
         
-        filter.type = 'lowpass';
-        filter.frequency.value = 150;
+        // Warbling frequency for creak effect
+        const baseFreq = 300 + Math.random() * 200;
+        osc1.frequency.setValueAtTime(baseFreq, now);
+        osc1.frequency.linearRampToValueAtTime(baseFreq * 1.5, now + duration * 0.3);
+        osc1.frequency.linearRampToValueAtTime(baseFreq * 0.8, now + duration * 0.7);
+        osc1.frequency.linearRampToValueAtTime(baseFreq * 1.2, now + duration);
         
-        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+        osc2.frequency.setValueAtTime(baseFreq * 1.01, now);
+        osc2.frequency.linearRampToValueAtTime(baseFreq * 1.52, now + duration * 0.3);
         
-        osc.connect(filter);
+        filter.type = 'bandpass';
+        filter.frequency.value = 800;
+        filter.Q.value = 2;
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.06, now + 0.05);
+        gain.gain.linearRampToValueAtTime(0.03, now + duration * 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        
+        osc1.connect(filter);
+        osc2.connect(filter);
         filter.connect(gain);
         gain.connect(this.sfxGain);
         
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + duration);
+        osc2.stop(now + duration);
+    }
+    
+    playAmbientWindSound() {
+        const now = this.audioContext.currentTime;
+        const duration = 2 + Math.random();
+        
+        // Create noise buffer
+        const bufferSize = this.audioContext.sampleRate * duration;
+        const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        // Brown noise for wind
+        let lastOut = 0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 3.5;
+        }
+        
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        
+        const filter = this.audioContext.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+        
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+        gain.gain.linearRampToValueAtTime(0.05, now + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+        
+        source.start(now);
+    }
+    
+    playUIHoverSound() {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.value = 600;
+        
+        gain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.08);
+        
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        
         osc.start();
-        osc.stop(this.audioContext.currentTime + 0.1);
+        osc.stop(this.audioContext.currentTime + 0.08);
+    }
+    
+    playUIClickSound() {
+        const now = this.audioContext.currentTime;
+        
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        
+        osc.start(now);
+        osc.stop(now + 0.1);
     }
     
     // The Hum - the sound of the Light

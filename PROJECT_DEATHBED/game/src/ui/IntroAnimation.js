@@ -1,10 +1,10 @@
 /**
- * PROJECT DEATHBED - EXPLOSIVE Cinematic Intro
- * Music-synced with "CRUMPLED UNDER PRESSURE" (3:17)
+ * PROJECT DEATHBED - Somber Cinematic Intro
+ * A melancholic anime-style opening
  * Made by James C.
  * 
- * This version is EXPLOSIVE - massive particles, screen shakes, 
- * glitch effects, and chaos synced to the music!
+ * This version is SOMBER - gentle particles, slow fades,
+ * emotional beats synced to the music
  */
 
 export class IntroAnimation {
@@ -21,7 +21,7 @@ export class IntroAnimation {
         this.musicStarted = false;
         this.lastMusicTime = 0;
         
-        // Explosive particle systems
+        // Gentle particle systems (reduced from explosive)
         this.explosionParticles = [];
         this.dustParticles = [];
         this.sparkParticles = [];
@@ -30,177 +30,80 @@ export class IntroAnimation {
         this.afterimages = [];
         this.electricArcs = [];
         
-        // Screen shake
+        // Screen shake (reduced intensity)
         this.shakeIntensity = 0;
-        this.shakeDecay = 0.92; // Faster decay for snappier shakes
+        this.shakeDecay = 0.95; // Slower decay for gentler shakes
         
-        // Chromatic aberration
+        // Chromatic aberration (reduced)
         this.chromaOffset = 0;
         this.targetChroma = 0;
         
         // Beat pulse (screen border flash)
         this.beatPulse = 0;
         
-        // Glitch state
+        // Glitch state (used sparingly)
         this.glitchActive = false;
         this.glitchTimer = 0;
         
-        // Energy level (builds up during intro)
+        // Energy level (builds slowly)
         this.energy = 0;
         this.targetEnergy = 0;
         
         // Music sync - KEY TIMESTAMPS (in seconds)
-        // FASTER PACED - tighter timing, more events!
+        // SOMBER - minimal effects, focus on emotion and text
         this.musicEvents = [
-            // Opening buildup (0-12s) - FASTER
+            // Opening - Adrian and Luis scene (0-15s)
             { time: 0, action: 'start_particles' },
-            { time: 0.5, action: 'light_beam' },
-            { time: 1, action: 'glitch', intensity: 0.3 },
-            { time: 1.5, action: 'electric_arc' },
-            { time: 2, action: 'text', content: 'A Game By' },
-            { time: 2.5, action: 'shake', intensity: 8 },
-            { time: 3, action: 'chroma', intensity: 0.5 },
-            { time: 4, action: 'explosion', count: 40 },
-            { time: 5, action: 'text', content: 'JAMES C.', style: 'credit_big' },
-            { time: 5.5, action: 'light_beam' },
-            { time: 6, action: 'explosion', count: 60 },
-            { time: 7, action: 'shake', intensity: 12 },
-            { time: 8, action: 'glitch', intensity: 0.6 },
-            { time: 9, action: 'electric_arc' },
-            { time: 10, action: 'chroma', intensity: 0.8 },
+            { time: 0, action: 'brothers_scene' },
+            { time: 5, action: 'text', content: 'A Game By' },
+            { time: 8, action: 'text', content: 'JAMES C.', style: 'credit_big' },
+            { time: 12, action: 'fade_brothers' },
             
-            // First drop / Title reveal (11-24s) - FASTER
-            { time: 11, action: 'buildup' },
-            { time: 12, action: 'flash_white' },
-            { time: 12.05, action: 'explosion', count: 300 },
-            { time: 12.05, action: 'shake', intensity: 45 },
-            { time: 12.05, action: 'chroma', intensity: 1.0 },
-            { time: 12.1, action: 'title', content: 'PROJECT' },
-            { time: 12.5, action: 'light_beam' },
-            { time: 13, action: 'electric_arc' },
-            { time: 13.5, action: 'explosion', count: 150 },
-            { time: 14, action: 'title_add', content: 'DEATHBED' },
-            { time: 14.5, action: 'shake', intensity: 30 },
-            { time: 15, action: 'glitch', intensity: 0.9 },
-            { time: 16, action: 'explosion', count: 80 },
-            { time: 17, action: 'light_beam' },
-            { time: 18, action: 'energy_surge' },
-            { time: 20, action: 'electric_arc' },
+            // Title reveal (14-25s) - Gentle
+            { time: 14, action: 'fade_text' },
+            { time: 15, action: 'title', content: 'PROJECT' },
+            { time: 17, action: 'title_add', content: 'DEATHBED' },
             { time: 22, action: 'fade_text' },
             
-            // Story beats (23-48s) - FASTER pacing
-            { time: 23, action: 'text', content: 'When the light came...' },
-            { time: 24, action: 'shake', intensity: 10 },
-            { time: 25, action: 'light_beam' },
-            { time: 26, action: 'explosion', count: 60 },
-            { time: 27, action: 'chroma', intensity: 0.6 },
-            { time: 28, action: 'text', content: '...everything changed.' },
-            { time: 29, action: 'electric_arc' },
-            { time: 30, action: 'glitch', intensity: 0.7 },
-            { time: 31, action: 'shake', intensity: 15 },
-            { time: 32, action: 'explosion', count: 50 },
-            { time: 34, action: 'text', content: 'Two brothers.' },
-            { time: 35, action: 'light_beam' },
-            { time: 36, action: 'explosion', count: 80 },
-            { time: 38, action: 'text', content: 'One promise.' },
-            { time: 39, action: 'shake', intensity: 18 },
-            { time: 40, action: 'electric_arc' },
-            { time: 42, action: 'chroma', intensity: 0.7 },
-            { time: 44, action: 'explosion', count: 70 },
+            // Story beats (25-55s) - Slow, emotional pacing
+            { time: 25, action: 'text', content: 'When the light came...' },
+            { time: 30, action: 'text', content: '...everything changed.' },
+            { time: 36, action: 'text', content: 'Two brothers.' },
+            { time: 42, action: 'text', content: 'One choice.' },
+            { time: 48, action: 'fade_text' },
             
-            // Character reveals (46-68s) - FASTER
-            { time: 46, action: 'flash_gold' },
-            { time: 46.05, action: 'character', name: 'LUIS', subtitle: 'The dying brother' },
-            { time: 46.5, action: 'light_beam' },
-            { time: 47, action: 'explosion', count: 100 },
-            { time: 48, action: 'shake', intensity: 15 },
-            { time: 50, action: 'electric_arc' },
-            { time: 52, action: 'glitch', intensity: 0.8 },
-            { time: 54, action: 'explosion', count: 60 },
-            { time: 56, action: 'flash_gold' },
-            { time: 56.05, action: 'character', name: 'TANNER', subtitle: 'The protector' },
-            { time: 56.5, action: 'light_beam' },
-            { time: 57, action: 'explosion', count: 100 },
-            { time: 58, action: 'shake', intensity: 18 },
-            { time: 60, action: 'chroma', intensity: 0.8 },
-            { time: 62, action: 'electric_arc' },
+            // Character reveals (50-70s) - Simple, no flash
+            { time: 50, action: 'character', name: 'LUIS', subtitle: 'Brother' },
+            { time: 58, action: 'fade_text' },
+            { time: 60, action: 'character', name: 'TANNER', subtitle: 'Friend' },
+            { time: 68, action: 'fade_text' },
             
-            // Chorus drop (64-85s) - MAXIMUM ENERGY
-            { time: 64, action: 'buildup' },
-            { time: 66, action: 'flash_white' },
-            { time: 66.05, action: 'explosion', count: 400 },
-            { time: 66.05, action: 'shake', intensity: 55 },
-            { time: 66.05, action: 'chroma', intensity: 1.0 },
-            { time: 66.1, action: 'quote', content: '"Stay with me until the end."' },
-            { time: 67, action: 'light_beam' },
-            { time: 68, action: 'electric_arc' },
-            { time: 69, action: 'glitch', intensity: 1.0 },
-            { time: 70, action: 'explosion', count: 200 },
-            { time: 72, action: 'shake', intensity: 35 },
-            { time: 74, action: 'light_beam' },
-            { time: 76, action: 'explosion', count: 150 },
-            { time: 78, action: 'energy_surge' },
-            { time: 80, action: 'electric_arc' },
+            // Emotional quote (70-85s)
+            { time: 72, action: 'quote', content: '"Stay with me until the end."' },
+            { time: 80, action: 'fade_text' },
             
-            // Emotional section (82-108s) - slightly calmer but still punchy
-            { time: 82, action: 'text', content: 'Their home.' },
-            { time: 84, action: 'light_beam' },
-            { time: 86, action: 'explosion', count: 50 },
-            { time: 88, action: 'text', content: 'Their sanctuary.' },
-            { time: 90, action: 'shake', intensity: 10 },
-            { time: 92, action: 'electric_arc' },
-            { time: 94, action: 'text', content: 'Their last hope.' },
-            { time: 96, action: 'explosion', count: 60 },
-            { time: 98, action: 'glitch', intensity: 0.5 },
-            { time: 100, action: 'chroma', intensity: 0.5 },
-            { time: 102, action: 'quote', content: '"Brothers until the end."' },
-            { time: 104, action: 'light_beam' },
-            { time: 106, action: 'explosion', count: 70 },
+            // Story continuation (85-110s)
+            { time: 85, action: 'text', content: 'Their home.' },
+            { time: 92, action: 'text', content: 'Their sanctuary.' },
+            { time: 99, action: 'text', content: 'Their last hope.' },
+            { time: 106, action: 'fade_text' },
             
-            // Bridge - intimate but still dynamic (108-132s)
-            { time: 108, action: 'text', content: 'A story about love.' },
-            { time: 110, action: 'electric_arc' },
-            { time: 112, action: 'shake', intensity: 12 },
-            { time: 114, action: 'explosion', count: 50 },
-            { time: 118, action: 'text', content: 'A story about letting go.' },
-            { time: 120, action: 'light_beam' },
-            { time: 122, action: 'glitch', intensity: 0.6 },
-            { time: 124, action: 'chroma', intensity: 0.6 },
-            { time: 126, action: 'explosion', count: 60 },
-            { time: 128, action: 'electric_arc' },
+            // Theme (110-135s)
+            { time: 110, action: 'quote', content: '"Brothers until the end."' },
+            { time: 118, action: 'fade_text' },
+            { time: 120, action: 'text', content: 'A story about love.' },
+            { time: 128, action: 'text', content: 'A story about letting go.' },
+            { time: 136, action: 'fade_text' },
             
-            // Final chorus - CLIMAX (132-165s)
-            { time: 132, action: 'buildup' },
-            { time: 134, action: 'flash_white' },
-            { time: 134.05, action: 'explosion', count: 500 },
-            { time: 134.05, action: 'shake', intensity: 60 },
-            { time: 134.05, action: 'chroma', intensity: 1.0 },
-            { time: 134.1, action: 'title_final', content: 'PROJECT DEATHBED' },
-            { time: 135, action: 'light_beam' },
-            { time: 136, action: 'electric_arc' },
-            { time: 138, action: 'glitch', intensity: 1.0 },
-            { time: 140, action: 'explosion', count: 300 },
-            { time: 142, action: 'shake', intensity: 45 },
-            { time: 144, action: 'light_beam' },
-            { time: 146, action: 'explosion', count: 200 },
-            { time: 148, action: 'electric_arc' },
+            // Final title (140-165s)
+            { time: 140, action: 'title_final', content: 'PROJECT DEATHBED' },
             { time: 150, action: 'tagline', content: 'Their final journey begins.' },
-            { time: 152, action: 'shake', intensity: 25 },
-            { time: 154, action: 'explosion', count: 150 },
-            { time: 156, action: 'light_beam' },
-            { time: 158, action: 'chroma', intensity: 0.7 },
-            { time: 160, action: 'explosion', count: 100 },
+            { time: 160, action: 'fade_text' },
             
             // Outro & credits (165-197s)
-            { time: 165, action: 'fade_text' },
             { time: 168, action: 'credit_final', content: 'Made by James C.' },
-            { time: 170, action: 'light_beam' },
-            { time: 175, action: 'electric_arc' },
-            { time: 180, action: 'glitch', intensity: 0.4 },
-            { time: 185, action: 'explosion', count: 50 },
-            { time: 190, action: 'press_start' },
-            { time: 192, action: 'light_beam' },
-            { time: 195, action: 'electric_arc' }
+            { time: 180, action: 'fade_text' },
+            { time: 185, action: 'press_start' }
         ];
         
         this.processedEvents = new Set();
@@ -219,7 +122,7 @@ export class IntroAnimation {
             background: #000000;
             z-index: 3000;
             overflow: hidden;
-            font-family: 'Arial Black', 'Impact', sans-serif;
+            font-family: 'Crimson Text', 'Georgia', serif;
         `;
         
         // Main particle canvas - for explosions
@@ -417,201 +320,197 @@ export class IntroAnimation {
     addStyles() {
         if (document.getElementById('intro-explosive-styles')) return;
         
+        // Load Google Fonts for elegant typography
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
+        
         const style = document.createElement('style');
         style.id = 'intro-explosive-styles';
         style.textContent = `
-            @keyframes explosiveIn {
+            @keyframes elegantIn {
                 0% { 
                     opacity: 0; 
-                    transform: scale(3) rotate(10deg);
-                    filter: blur(30px);
-                }
-                50% {
-                    opacity: 1;
-                    filter: blur(5px);
+                    transform: translateY(20px);
+                    filter: blur(10px);
                 }
                 100% { 
                     opacity: 1; 
-                    transform: scale(1) rotate(0deg);
+                    transform: translateY(0);
                     filter: blur(0);
                 }
             }
             
-            @keyframes explosiveOut {
-                0% { opacity: 1; transform: scale(1); }
-                100% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+            @keyframes elegantOut {
+                0% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-10px); filter: blur(5px); }
             }
             
             @keyframes titleGlitch {
                 0%, 100% { 
-                    text-shadow: 0 0 30px #c9a227, 0 0 60px #c9a227;
+                    text-shadow: 0 0 30px rgba(201, 162, 39, 0.5), 0 0 60px rgba(201, 162, 39, 0.3);
                     transform: translate(0, 0);
                 }
-                20% {
-                    text-shadow: -5px 0 #ff0000, 5px 0 #00ffff, 0 0 30px #c9a227;
-                    transform: translate(-3px, 2px);
-                }
-                40% {
-                    text-shadow: 5px 0 #ff0000, -5px 0 #00ffff, 0 0 30px #c9a227;
-                    transform: translate(3px, -2px);
-                }
-                60% {
-                    text-shadow: 0 0 60px #c9a227, 0 0 100px #ff6b35;
-                    transform: translate(0, 0);
+                50% {
+                    text-shadow: 0 0 50px rgba(201, 162, 39, 0.7), 0 0 80px rgba(201, 162, 39, 0.4);
                 }
             }
             
-            @keyframes pulseBorder {
-                0%, 100% { box-shadow: inset 0 0 50px rgba(201, 162, 39, 0.3); }
-                50% { box-shadow: inset 0 0 100px rgba(201, 162, 39, 0.6); }
-            }
-            
-            @keyframes scanline {
-                0% { top: -10%; }
-                100% { top: 110%; }
+            @keyframes gentlePulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.8; }
             }
             
             @keyframes textPulse {
                 0%, 100% { text-shadow: 0 0 20px currentColor; }
-                50% { text-shadow: 0 0 60px currentColor, 0 0 100px currentColor; }
+                50% { text-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
             }
             
-            @keyframes shake {
-                0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-                25% { transform: translate(-50%, -50%) translate(5px, -5px) rotate(0.5deg); }
-                50% { transform: translate(-50%, -50%) translate(-5px, 5px) rotate(-0.5deg); }
-                75% { transform: translate(-50%, -50%) translate(-5px, -5px) rotate(0.5deg); }
+            @keyframes floatUp {
+                0% { transform: translateY(0); }
+                100% { transform: translateY(-5px); }
             }
             
             .explosive-title {
-                font-size: 8vw;
-                font-weight: 900;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 6vw;
+                font-weight: 600;
                 color: #c9a227;
                 text-transform: uppercase;
-                letter-spacing: 0.3em;
-                text-shadow: 0 0 30px #c9a227, 0 0 60px #c9a227, 0 0 90px #ff6b35;
-                animation: explosiveIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-                           titleGlitch 2s ease-in-out infinite 0.5s;
+                letter-spacing: 0.5em;
+                text-shadow: 0 0 40px rgba(201, 162, 39, 0.4), 0 0 80px rgba(201, 162, 39, 0.2);
+                animation: elegantIn 1.5s ease-out forwards,
+                           titleGlitch 4s ease-in-out infinite 1.5s;
             }
             
             .explosive-title-sub {
-                font-size: 10vw;
-                font-weight: 900;
-                color: #ff6b35;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 8vw;
+                font-weight: 700;
+                color: #e8d8b8;
                 text-transform: uppercase;
-                letter-spacing: 0.2em;
-                margin-top: 20px;
-                text-shadow: 0 0 30px #ff6b35, 0 0 60px #ff6b35, 0 0 90px #c9a227;
-                animation: explosiveIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-                           titleGlitch 2.5s ease-in-out infinite 0.6s;
+                letter-spacing: 0.3em;
+                margin-top: 10px;
+                text-shadow: 0 0 50px rgba(232, 216, 184, 0.3), 0 0 100px rgba(201, 162, 39, 0.2);
+                animation: elegantIn 1.8s ease-out forwards,
+                           titleGlitch 5s ease-in-out infinite 1.8s;
             }
             
             .explosive-text {
-                font-size: 4vw;
-                font-weight: 700;
-                color: #e8e0d0;
-                text-transform: uppercase;
-                letter-spacing: 0.2em;
-                text-shadow: 0 0 20px rgba(201, 162, 39, 0.8);
-                animation: explosiveIn 0.4s ease forwards, textPulse 2s ease-in-out infinite;
+                font-family: 'Cormorant Garamond', 'Georgia', serif;
+                font-size: 3vw;
+                font-weight: 400;
+                color: #d0c8b8;
+                letter-spacing: 0.15em;
+                text-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
+                animation: elegantIn 1s ease-out forwards, gentlePulse 3s ease-in-out infinite;
             }
             
             .explosive-quote {
-                font-size: 3.5vw;
+                font-family: 'Crimson Text', 'Georgia', serif;
+                font-size: 3vw;
                 font-weight: 400;
                 font-style: italic;
                 color: #c9a227;
-                letter-spacing: 0.1em;
-                text-shadow: 0 0 30px rgba(201, 162, 39, 0.6);
-                animation: explosiveIn 0.5s ease forwards;
+                letter-spacing: 0.08em;
+                text-shadow: 0 0 30px rgba(201, 162, 39, 0.4);
+                animation: elegantIn 1.2s ease-out forwards;
             }
             
             .explosive-character {
-                font-size: 7vw;
-                font-weight: 900;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 6vw;
+                font-weight: 700;
                 color: #ffffff;
                 text-transform: uppercase;
-                letter-spacing: 0.3em;
-                text-shadow: 0 0 40px #c9a227, 0 0 80px #c9a227;
-                animation: explosiveIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                letter-spacing: 0.4em;
+                text-shadow: 0 0 50px rgba(201, 162, 39, 0.5), 0 0 100px rgba(201, 162, 39, 0.3);
+                animation: elegantIn 1s ease-out forwards;
             }
             
             .explosive-subtitle {
-                font-size: 2vw;
-                font-weight: 400;
-                color: #a0988a;
+                font-family: 'Cormorant Garamond', 'Georgia', serif;
+                font-size: 1.8vw;
+                font-weight: 300;
+                font-style: italic;
+                color: #9a9080;
                 text-transform: uppercase;
-                letter-spacing: 0.5em;
-                margin-top: 20px;
+                letter-spacing: 0.6em;
+                margin-top: 25px;
                 opacity: 0;
-                animation: explosiveIn 0.5s ease 0.3s forwards;
+                animation: elegantIn 1.2s ease-out 0.4s forwards;
             }
             
             .explosive-credit {
-                font-size: 2vw;
+                font-family: 'Cormorant Garamond', 'Georgia', serif;
+                font-size: 1.8vw;
                 font-weight: 400;
                 color: #6a6560;
                 text-transform: uppercase;
-                letter-spacing: 0.5em;
-                animation: explosiveIn 0.5s ease forwards;
+                letter-spacing: 0.4em;
+                animation: elegantIn 1s ease-out forwards;
             }
             
             .explosive-credit-big {
-                font-size: 5vw;
-                font-weight: 900;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 4vw;
+                font-weight: 600;
                 color: #c9a227;
                 text-transform: uppercase;
-                letter-spacing: 0.3em;
-                text-shadow: 0 0 30px #c9a227;
-                animation: explosiveIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                letter-spacing: 0.25em;
+                text-shadow: 0 0 40px rgba(201, 162, 39, 0.4);
+                animation: elegantIn 1.2s ease-out forwards;
             }
             
             .explosive-tagline {
-                font-size: 2.5vw;
+                font-family: 'Crimson Text', 'Georgia', serif;
+                font-size: 2vw;
                 font-weight: 400;
                 font-style: italic;
-                color: #e8e0d0;
-                letter-spacing: 0.2em;
-                text-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
-                animation: explosiveIn 0.5s ease forwards;
+                color: #d0c8b8;
+                letter-spacing: 0.15em;
+                text-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
+                animation: elegantIn 1.2s ease-out forwards;
             }
             
             .explosive-press-start {
-                font-size: 2vw;
-                font-weight: 700;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 1.5vw;
+                font-weight: 500;
                 color: #c9a227;
                 text-transform: uppercase;
                 letter-spacing: 0.5em;
-                animation: textPulse 1s ease-in-out infinite;
+                animation: textPulse 2s ease-in-out infinite;
             }
             
             .title-final {
-                font-size: 12vw;
-                font-weight: 900;
+                font-family: 'Cinzel', 'Georgia', serif;
+                font-size: 10vw;
+                font-weight: 700;
                 color: #c9a227;
                 text-transform: uppercase;
-                letter-spacing: 0.2em;
+                letter-spacing: 0.15em;
                 text-shadow: 
-                    0 0 50px #c9a227, 
-                    0 0 100px #c9a227, 
-                    0 0 150px #ff6b35,
-                    0 0 200px #ff6b35;
-                animation: explosiveIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-                           titleGlitch 1.5s ease-in-out infinite 0.3s;
+                    0 0 60px rgba(201, 162, 39, 0.5), 
+                    0 0 120px rgba(201, 162, 39, 0.3), 
+                    0 0 180px rgba(201, 162, 39, 0.2);
+                animation: elegantIn 1.5s ease-out forwards,
+                           titleGlitch 4s ease-in-out infinite 1.5s;
             }
             
             .pulse-ring {
                 position: absolute;
-                border: 3px solid #c9a227;
+                border: 2px solid rgba(201, 162, 39, 0.5);
                 border-radius: 50%;
-                animation: pulseExpand 2s ease-out forwards;
+                animation: pulseExpand 3s ease-out forwards;
             }
             
             @keyframes pulseExpand {
                 0% {
                     width: 0;
                     height: 0;
-                    opacity: 1;
+                    opacity: 0.8;
                 }
                 100% {
                     width: 200vw;
@@ -825,6 +724,169 @@ export class IntroAnimation {
             case 'chroma':
                 this.targetChroma = event.intensity || 0.5;
                 break;
+                
+            case 'brothers_scene':
+                this.showBrothersScene();
+                break;
+                
+            case 'fade_brothers':
+                this.fadeBrothersScene();
+                break;
+        }
+    }
+    
+    showBrothersScene() {
+        // Create a somber scene with Adrian and Luis silhouettes looking at the sky
+        this.brothersOverlay = document.createElement('div');
+        this.brothersOverlay.id = 'brothers-scene';
+        this.brothersOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            background: linear-gradient(to top, #0a0a15 0%, #1a1a2e 40%, #2d2d44 70%, #3d3d5c 100%);
+            opacity: 0;
+            transition: opacity 2s ease;
+        `;
+        
+        // Create sky with subtle stars
+        const sky = document.createElement('div');
+        sky.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            overflow: hidden;
+        `;
+        
+        // Add stars
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            const size = 1 + Math.random() * 2;
+            star.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                background: rgba(255, 255, 255, ${0.3 + Math.random() * 0.5});
+                border-radius: 50%;
+                left: ${Math.random() * 100}%;
+                top: ${Math.random() * 100}%;
+                animation: twinkle ${2 + Math.random() * 3}s ease-in-out infinite;
+            `;
+            sky.appendChild(star);
+        }
+        this.brothersOverlay.appendChild(sky);
+        
+        // Add a subtle glow in the sky (The Light in distance)
+        const lightGlow = document.createElement('div');
+        lightGlow.style.cssText = `
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 200px;
+            background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.15) 0%, transparent 70%);
+            animation: pulseGlow 4s ease-in-out infinite;
+        `;
+        this.brothersOverlay.appendChild(lightGlow);
+        
+        // Ground/horizon
+        const ground = document.createElement('div');
+        ground.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 25%;
+            background: #0a0a12;
+        `;
+        this.brothersOverlay.appendChild(ground);
+        
+        // Adrian silhouette (taller, on left)
+        const adrian = document.createElement('div');
+        adrian.style.cssText = `
+            position: absolute;
+            bottom: 20%;
+            left: 35%;
+            width: 60px;
+            height: 140px;
+            background: #0a0a0a;
+            clip-path: polygon(50% 0%, 35% 15%, 30% 35%, 20% 100%, 80% 100%, 70% 35%, 65% 15%);
+        `;
+        // Adrian's head
+        const adrianHead = document.createElement('div');
+        adrianHead.style.cssText = `
+            position: absolute;
+            bottom: 140px;
+            left: calc(35% + 15px);
+            width: 30px;
+            height: 35px;
+            background: #0a0a0a;
+            border-radius: 50%;
+        `;
+        this.brothersOverlay.appendChild(adrian);
+        this.brothersOverlay.appendChild(adrianHead);
+        
+        // Luis silhouette (shorter, on right, slightly hunched)
+        const luis = document.createElement('div');
+        luis.style.cssText = `
+            position: absolute;
+            bottom: 20%;
+            left: 55%;
+            width: 55px;
+            height: 120px;
+            background: #0a0a0a;
+            clip-path: polygon(45% 0%, 30% 20%, 25% 40%, 15% 100%, 85% 100%, 75% 40%, 70% 20%);
+        `;
+        // Luis's head
+        const luisHead = document.createElement('div');
+        luisHead.style.cssText = `
+            position: absolute;
+            bottom: 120px;
+            left: calc(55% + 12px);
+            width: 28px;
+            height: 32px;
+            background: #0a0a0a;
+            border-radius: 50%;
+        `;
+        this.brothersOverlay.appendChild(luis);
+        this.brothersOverlay.appendChild(luisHead);
+        
+        // Add subtle animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes twinkle {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
+            }
+            @keyframes pulseGlow {
+                0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+                50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        this.container.appendChild(this.brothersOverlay);
+        
+        // Fade in
+        setTimeout(() => {
+            this.brothersOverlay.style.opacity = '1';
+        }, 100);
+    }
+    
+    fadeBrothersScene() {
+        if (this.brothersOverlay) {
+            this.brothersOverlay.style.transition = 'opacity 2s ease';
+            this.brothersOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (this.brothersOverlay && this.brothersOverlay.parentNode) {
+                    this.brothersOverlay.remove();
+                }
+            }, 2000);
         }
     }
     

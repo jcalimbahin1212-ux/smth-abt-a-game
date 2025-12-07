@@ -18,6 +18,10 @@ export class DialogueSystem {
         this.typewriterSpeed = 30; // ms per character
         this.fullText = '';
         
+        // Auto-hide timer
+        this.autoHideTimeout = null;
+        this.autoHideDelay = 4000; // 4 seconds after text finishes
+        
         // UI elements
         this.dialogueBox = document.getElementById('dialogue-box');
         this.speakerName = document.getElementById('speaker-name');
@@ -106,6 +110,12 @@ export class DialogueSystem {
     }
     
     showContinueOrChoices() {
+        // Clear any existing auto-hide timer
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
+        
         if (this.currentDialogue.responses && this.currentDialogue.responses.length > 0) {
             // Show dialogue choices
             this.showChoices(this.currentDialogue.responses);
@@ -113,9 +123,20 @@ export class DialogueSystem {
             // Alternative format for choices
             this.showChoices(this.currentDialogue.choices);
         } else {
-            // Show continue prompt
+            // No choices - show continue prompt and start auto-hide timer
             this.continuePrompt.style.display = 'block';
             this.continuePrompt.textContent = 'Press SPACE to continue';
+            
+            // Auto-hide after delay if no interaction options
+            // Calculate delay based on text length (longer text = more time)
+            const textLength = this.fullText.length;
+            const readTime = Math.max(this.autoHideDelay, textLength * 50); // ~50ms per character, min 4s
+            
+            this.autoHideTimeout = setTimeout(() => {
+                if (this.isActive && !this.currentChoices) {
+                    this.fadeOutDialogue();
+                }
+            }, readTime);
         }
     }
     
@@ -173,20 +194,30 @@ export class DialogueSystem {
         
         const choice = this.currentChoices[index];
         
+        // Play choice sound
+        this.game.audioManager.playSound('dialogue_choice');
+        
+        // Clear current choices to prevent double-selection
+        this.currentChoices = null;
+        
+        // Clear choice UI
+        const existingChoices = this.dialogueBox.querySelectorAll('.dialogue-choices');
+        existingChoices.forEach(el => el.remove());
+        
         // Execute effect if present
         if (choice.effect) {
             choice.effect(this.game);
         }
         
         // Execute action if present (alternative format)
+        // If action is provided, it handles the next step - don't auto-close
         if (choice.action) {
             choice.action(this.game);
+            // Action handles showing next dialogue or closing, so we return here
+            return;
         }
         
-        // Play choice sound
-        this.game.audioManager.playSound('dialogue_choice');
-        
-        // Go to next dialogue or end
+        // Go to next dialogue or end (only if no action was provided)
         if (choice.next && this.currentNPC) {
             const nextDialogue = this.currentNPC.getDialogue(choice.next);
             if (nextDialogue) {
@@ -214,6 +245,12 @@ export class DialogueSystem {
     }
     
     endDialogue() {
+        // Clear auto-hide timer
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
+        
         this.isActive = false;
         this.currentNPC = null;
         this.currentDialogue = null;
@@ -225,6 +262,19 @@ export class DialogueSystem {
         // Clear choices
         const existingChoices = this.dialogueBox.querySelectorAll('.dialogue-choices');
         existingChoices.forEach(el => el.remove());
+    }
+    
+    fadeOutDialogue() {
+        // Smooth fade out for auto-hide
+        this.dialogueBox.style.transition = 'opacity 0.5s ease';
+        this.dialogueBox.style.opacity = '0';
+        
+        setTimeout(() => {
+            this.endDialogue();
+            // Reset opacity for next dialogue
+            this.dialogueBox.style.opacity = '';
+            this.dialogueBox.style.transition = '';
+        }, 500);
     }
     
     update(deltaTime) {
