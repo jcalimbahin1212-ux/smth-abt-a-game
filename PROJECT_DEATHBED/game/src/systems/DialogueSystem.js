@@ -69,10 +69,27 @@ export class DialogueSystem {
             return;
         }
         
+        // Ensure dialogue system is active so space key works
+        this.isActive = true;
+        
+        // Store onComplete callback if provided
+        if (dialogue.onComplete) {
+            this.onCompleteCallback = dialogue.onComplete;
+        } else {
+            this.onCompleteCallback = null;
+        }
+        
         this.currentDialogue = dialogue;
         
         // Update speaker
         this.speakerName.textContent = dialogue.speaker || '';
+        
+        // Apply custom speaker color if provided
+        if (dialogue.speakerColor) {
+            this.speakerName.style.color = dialogue.speakerColor;
+        } else {
+            this.speakerName.style.color = ''; // Reset to default
+        }
         
         // Start typewriter effect
         this.fullText = dialogue.text;
@@ -251,10 +268,14 @@ export class DialogueSystem {
             this.autoHideTimeout = null;
         }
         
+        // Store callback before clearing
+        const callback = this.onCompleteCallback;
+        
         this.isActive = false;
         this.currentNPC = null;
         this.currentDialogue = null;
         this.currentChoices = null;
+        this.onCompleteCallback = null;
         
         // Hide dialogue box
         this.dialogueBox.classList.remove('visible');
@@ -262,6 +283,11 @@ export class DialogueSystem {
         // Clear choices
         const existingChoices = this.dialogueBox.querySelectorAll('.dialogue-choices');
         existingChoices.forEach(el => el.remove());
+        
+        // Execute onComplete callback if provided
+        if (callback) {
+            callback();
+        }
     }
     
     fadeOutDialogue() {

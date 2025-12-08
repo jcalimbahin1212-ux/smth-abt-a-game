@@ -27,12 +27,18 @@ export class RooftopScene {
         // Story state
         this.lightEventTriggered = false;
         this.lightDescendTimer = 0;
+        this.dialogueShown = false;
         
         // Jump/Dream sequence state
         this.jumpAvailable = true; // Always available on rooftop
         this.playerAtEdge = false;
         this.jumpDecisionMade = false;
         this.talkedToLuis = false;
+        
+        // Fallen Dream route state
+        this.notYetClicked = false;
+        this.fallenDreamTriggered = false;
+        this.staticOverlay = null;
     }
     
     setupEnvironment() {
@@ -504,6 +510,15 @@ export class RooftopScene {
             interactionType: 'examine',
             invisible: true,
             onInteract: (game) => {
+                if (this.fallenDreamTriggered) {
+                    // Already triggered fallen dream route
+                    game.dialogueSystem.showDialogue({
+                        speaker: 'ADRIAN',
+                        text: "...I can't move. Something is holding me here."
+                    });
+                    return;
+                }
+                
                 if (!this.jumpDecisionMade) {
                     // Jump decision dialogue - always available
                     game.dialogueSystem.showDialogue({
@@ -518,12 +533,9 @@ export class RooftopScene {
                                 }
                             },
                             {
-                                text: "Step back... (Not yet)",
+                                text: "Not yet...",
                                 action: () => {
-                                    game.dialogueSystem.showDialogue({
-                                        speaker: 'ADRIAN',
-                                        text: "Not yet... I'm not ready. But the edge keeps calling to me."
-                                    });
+                                    this.triggerNotYetSequence(game);
                                 }
                             }
                         ]
@@ -538,6 +550,647 @@ export class RooftopScene {
         });
         edge.addToScene(this.scene);
         this.interactables.push(edge);
+    }
+    
+    triggerNotYetSequence(game) {
+        // First "Not Yet" - show light static effect
+        this.notYetClicked = true;
+        
+        // Create static overlay
+        this.showStaticEffect(0.2);
+        
+        // Show the "Are you sure?" dialogue in red after a moment
+        setTimeout(() => {
+            game.dialogueSystem.showDialogue({
+                speaker: '???',
+                speakerColor: '#ff3333',
+                text: "Are you sure?",
+                choices: [
+                    {
+                        text: "No...",
+                        action: () => {
+                            // Force jump
+                            this.hideStaticEffect();
+                            game.dialogueSystem.showDialogue({
+                                speaker: 'ADRIAN',
+                                text: "I... I have to. There's no other way.",
+                                onComplete: () => {
+                                    this.jumpDecisionMade = true;
+                                    this.triggerJumpSequence(game);
+                                }
+                            });
+                        }
+                    },
+                    {
+                        text: "Yes.",
+                        action: () => {
+                            // Trigger Fallen Dream route
+                            this.triggerFallenDreamSequence(game);
+                        }
+                    }
+                ]
+            });
+        }, 500);
+    }
+    
+    triggerFallenDreamSequence(game) {
+        this.fallenDreamTriggered = true;
+        
+        // Intensify static and add blur
+        this.showStaticEffect(0.5);
+        this.showBlurEffect();
+        
+        // Play Untitled (Remastered) - falling music
+        if (game.audioManager) {
+            game.audioManager.playCustomMusic('untitled-remastered.mp3', { loop: true, volume: 0.7 });
+        }
+        
+        // After 5 seconds, show the final dialogue
+        setTimeout(() => {
+            // Intensify effects even more
+            this.showStaticEffect(0.7);
+            
+            game.dialogueSystem.showDialogue({
+                speaker: '???',
+                speakerColor: '#ff0000',
+                text: "Why do you resist?",
+                choices: [
+                    {
+                        text: "...",
+                        action: () => {
+                            // Close dialogue first
+                            game.dialogueSystem.endDialogue();
+                            
+                            // Small delay to ensure dialogue is closed
+                            setTimeout(() => {
+                                // Trigger the kneeling cutscene
+                                this.triggerKneelingCutscene(game);
+                            }, 100);
+                        }
+                    }
+                ]
+            });
+        }, 5000);
+    }
+    
+    triggerKneelingCutscene(game) {
+        console.log('Starting kneeling cutscene...');
+        
+        // Get reference to the camera (it's in sceneManager, not game directly)
+        const camera = game.sceneManager ? game.sceneManager.camera : null;
+        
+        if (!camera) {
+            console.error('No camera found for cutscene!');
+            return;
+        }
+        
+        console.log('Camera found:', camera);
+        
+        // FULLY disable player controls during cutscene
+        this.cutsceneActive = true;
+        
+        try {
+            if (game.playerController) {
+                game.playerController.enabled = false;
+                console.log('Player controller disabled');
+            }
+            
+            // Disable pointer lock controls if they exist
+            if (game.controls && typeof game.controls.unlock === 'function') {
+                game.controls.unlock();
+            }
+            if (game.controls) {
+                game.controls.enabled = false;
+            }
+            
+            // Also try to exit pointer lock
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+        } catch (e) {
+            console.log('Error disabling controls:', e);
+        }
+        
+        // Store original camera position
+        this.originalCameraPos = camera.position.clone();
+        this.originalCameraRot = camera.rotation.clone();
+        console.log('Camera position stored');
+        
+        // Hide static effect temporarily for clearer 3D view
+        this.hideStaticEffect();
+        this.hideBlurEffect();
+        
+        // Reset subtitle flags
+        this.shownSubtitle1 = false;
+        this.shownSubtitle2 = false;
+        this.shownSubtitle3 = false;
+        this.shownSubtitle4 = false;
+        this.shownSubtitle5 = false;
+        this.shownSubtitle6 = false;
+        this.shownSubtitle7 = false;
+        this.cutsceneStaticShown = false;
+        
+        // Create Adrian's 3D model for the cutscene
+        const adrianGroup = new THREE.Group();
+        
+        // Body (torso)
+        const torsoGeometry = new THREE.BoxGeometry(0.5, 0.7, 0.3);
+        const skinMaterial = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.8 });
+        const clothMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a35, roughness: 0.7 });
+        
+        const torso = new THREE.Mesh(torsoGeometry, clothMaterial);
+        torso.position.y = 1.2;
+        adrianGroup.add(torso);
+        
+        // Head
+        const headGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+        const head = new THREE.Mesh(headGeometry, skinMaterial);
+        head.position.y = 1.7;
+        head.scale.y = 1.1;
+        adrianGroup.add(head);
+        
+        // Hair
+        const hairGeometry = new THREE.SphereGeometry(0.16, 16, 16);
+        const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+        const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+        hair.position.y = 1.75;
+        hair.scale.set(1, 0.8, 1);
+        adrianGroup.add(hair);
+        
+        // Arms
+        const armGeometry = new THREE.BoxGeometry(0.12, 0.5, 0.12);
+        const leftArm = new THREE.Mesh(armGeometry, clothMaterial);
+        leftArm.position.set(-0.35, 1.1, 0);
+        adrianGroup.add(leftArm);
+        
+        const rightArm = new THREE.Mesh(armGeometry, clothMaterial);
+        rightArm.position.set(0.35, 1.1, 0);
+        adrianGroup.add(rightArm);
+        
+        // Hands
+        const handGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+        const leftHand = new THREE.Mesh(handGeometry, skinMaterial);
+        leftHand.position.set(-0.35, 0.8, 0);
+        adrianGroup.add(leftHand);
+        
+        const rightHand = new THREE.Mesh(handGeometry, skinMaterial);
+        rightHand.position.set(0.35, 0.8, 0);
+        adrianGroup.add(rightHand);
+        
+        // Legs
+        const legGeometry = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+        const leftLeg = new THREE.Mesh(legGeometry, clothMaterial);
+        leftLeg.position.set(-0.15, 0.5, 0);
+        adrianGroup.add(leftLeg);
+        
+        const rightLeg = new THREE.Mesh(legGeometry, clothMaterial);
+        rightLeg.position.set(0.15, 0.5, 0);
+        adrianGroup.add(rightLeg);
+        
+        // Position Adrian near the edge
+        adrianGroup.position.set(0, 0, -7);
+        adrianGroup.rotation.y = Math.PI; // Face away from edge initially
+        this.scene.add(adrianGroup);
+        
+        console.log('Adrian model added to scene');
+        
+        // Store animation data
+        const animData = { adrianGroup, head, leftArm, rightArm, leftHand, rightHand, torso, leftLeg, rightLeg };
+        
+        // Text overlay for subtitles
+        const subtitleOverlay = document.createElement('div');
+        subtitleOverlay.id = 'cutscene-subtitles';
+        subtitleOverlay.style.cssText = `
+            position: fixed;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6666;
+            font-family: 'Crimson Text', Georgia, serif;
+            font-size: 1.5rem;
+            text-align: center;
+            max-width: 70%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-shadow: 0 0 20px rgba(255, 50, 50, 0.8), 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10000;
+            pointer-events: none;
+        `;
+        document.body.appendChild(subtitleOverlay);
+        
+        // Vignette overlay
+        const vignetteOverlay = document.createElement('div');
+        vignetteOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 1s ease;
+        `;
+        document.body.appendChild(vignetteOverlay);
+        setTimeout(() => vignetteOverlay.style.opacity = '1', 100);
+        
+        const showSubtitle = (text, duration = 2500) => {
+            subtitleOverlay.textContent = text;
+            subtitleOverlay.style.opacity = '1';
+            setTimeout(() => {
+                subtitleOverlay.style.opacity = '0';
+            }, duration);
+        };
+        
+        // Animation using timeline with setTimeout
+        const startTime = Date.now();
+        let animationInterval;
+        
+        const runAnimation = () => {
+            const elapsed = Date.now() - startTime;
+            
+            // RENDER the scene each frame
+            if (game.renderer && camera && this.scene) {
+                game.renderer.render(this.scene, camera);
+            }
+            
+            // Phase 1: Camera setup (0-2s)
+            if (elapsed < 2000) {
+                const progress = elapsed / 2000;
+                const targetPos = new THREE.Vector3(3, 1.5, -5);
+                camera.position.lerp(targetPos, 0.02);
+                camera.lookAt(0, 1.2, -7);
+                
+                if (progress > 0.3 && !this.shownSubtitle1) {
+                    this.shownSubtitle1 = true;
+                    showSubtitle("You cannot run from yourself, Adrian.", 3000);
+                }
+            }
+            // Phase 2: Stumble (2-4.5s)
+            else if (elapsed < 4500) {
+                const progress = (elapsed - 2000) / 2500;
+                adrianGroup.rotation.z = Math.sin(elapsed * 0.01) * 0.1;
+                adrianGroup.position.y = Math.sin(elapsed * 0.015) * 0.05;
+                leftArm.rotation.x = -progress * 0.5;
+                rightArm.rotation.x = -progress * 0.5;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 1.2, -7);
+            }
+            // Phase 3: Knees buckle (4.5-6.5s)
+            else if (elapsed < 6500) {
+                const progress = (elapsed - 4500) / 2000;
+                adrianGroup.position.y = -progress * 0.3;
+                leftLeg.rotation.z = progress * 0.2;
+                rightLeg.rotation.z = -progress * 0.2;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 1.0, -7);
+                
+                if (progress > 0.5 && !this.shownSubtitle2) {
+                    this.shownSubtitle2 = true;
+                    showSubtitle("There it is. The weakness you tried to hide.", 2500);
+                }
+            }
+            // Phase 4: Fall to knees (6.5-9s)
+            else if (elapsed < 9000) {
+                const progress = (elapsed - 6500) / 2500;
+                adrianGroup.position.y = -0.3 - progress * 0.5;
+                torso.rotation.x = progress * 0.3;
+                head.rotation.x = progress * 0.2;
+                
+                const camTarget = new THREE.Vector3(2, 1.2, -6);
+                camera.position.lerp(camTarget, 0.02);
+                camera.lookAt(0, 0.8, -7);
+            }
+            // Phase 5: Grip head (9-12s)
+            else if (elapsed < 12000) {
+                const progress = (elapsed - 9000) / 3000;
+                const handProgress = Math.min(progress * 1.5, 1);
+                
+                leftArm.rotation.x = -1.2 * handProgress;
+                leftArm.rotation.z = 0.5 * handProgress;
+                leftHand.position.set(-0.35 + handProgress * 0.2, 0.8 + handProgress * 0.6, handProgress * 0.1);
+                
+                rightArm.rotation.x = -1.2 * handProgress;
+                rightArm.rotation.z = -0.5 * handProgress;
+                rightHand.position.set(0.35 - handProgress * 0.2, 0.8 + handProgress * 0.6, handProgress * 0.1);
+                
+                head.rotation.z = Math.sin(elapsed * 0.02) * 0.1;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 0.8, -7);
+                
+                if (progress > 0.3 && !this.shownSubtitle3) {
+                    this.shownSubtitle3 = true;
+                    showSubtitle("You thought you could silence me?", 3000);
+                }
+            }
+            // Phase 6: Static intensify (12-15s)
+            else if (elapsed < 15000) {
+                const progress = (elapsed - 12000) / 3000;
+                
+                if (!this.cutsceneStaticShown) {
+                    this.cutsceneStaticShown = true;
+                    this.showStaticEffect(0.4);
+                }
+                
+                adrianGroup.position.x = Math.sin(elapsed * 0.05) * 0.02;
+                head.rotation.z = Math.sin(elapsed * 0.03) * 0.15;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 0.8, -7);
+                
+                if (progress > 0.4 && !this.shownSubtitle4) {
+                    this.shownSubtitle4 = true;
+                    showSubtitle("I am everything you buried. Everything you denied.", 3000);
+                }
+            }
+            // Phase 7: Scream (15-18s)
+            else if (elapsed < 18000) {
+                const progress = (elapsed - 15000) / 3000;
+                
+                head.rotation.x = -0.3 - progress * 0.4;
+                adrianGroup.position.x = Math.sin(elapsed * 0.08) * 0.03;
+                adrianGroup.rotation.z = Math.sin(elapsed * 0.06) * 0.05;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 0.8, -7);
+                
+                if (progress > 0.3) {
+                    this.showStaticEffect(0.5 + progress * 0.3);
+                }
+                
+                if (progress > 0.3 && !this.shownSubtitle5) {
+                    this.shownSubtitle5 = true;
+                    showSubtitle("Scream all you want. No one is coming to save you.", 3000);
+                }
+            }
+            // Phase 8: Collapse (18-21s)
+            else if (elapsed < 21000) {
+                const progress = (elapsed - 18000) / 3000;
+                
+                torso.rotation.x = 0.3 + progress * 0.6;
+                head.rotation.x = progress * 0.5;
+                leftArm.rotation.x = -1.2 + progress * 0.8;
+                rightArm.rotation.x = -1.2 + progress * 0.8;
+                
+                // Keep camera focused on Adrian
+                camera.lookAt(0, 0.6, -7);
+                
+                if (progress > 0.4 && !this.shownSubtitle6) {
+                    this.shownSubtitle6 = true;
+                    showSubtitle("You never left this place, Adrian. You never will.", 4000);
+                }
+            }
+            // Phase 9: Fade out (21-23s)
+            else if (elapsed < 23000) {
+                const progress = (elapsed - 21000) / 2000;
+                vignetteOverlay.style.background = `radial-gradient(ellipse at center, rgba(0,0,0,${progress}) 0%, rgba(0,0,0,1) 100%)`;
+                
+                // Keep camera focused
+                camera.lookAt(0, 0.6, -7);
+                
+                if (progress > 0.5 && !this.shownSubtitle7) {
+                    this.shownSubtitle7 = true;
+                    showSubtitle("Welcome to this hellhole, Adrian.", 3000);
+                }
+            }
+            // Animation complete
+            else {
+                clearInterval(animationInterval);
+                
+                // Cleanup
+                this.scene.remove(adrianGroup);
+                subtitleOverlay.remove();
+                
+                console.log('Cutscene complete, showing unlock screen');
+                
+                // Show route unlock screen
+                this.showRouteUnlockScreen(game, vignetteOverlay);
+            }
+        };
+        
+        // Run animation at 60fps
+        animationInterval = setInterval(runAnimation, 16);
+        console.log('Animation interval started');
+    }
+    
+    showRouteUnlockScreen(game, vignetteOverlay) {
+        console.log('showRouteUnlockScreen called');
+        
+        // Create unlock screen overlay
+        const unlockOverlay = document.createElement('div');
+        unlockOverlay.id = 'route-unlock-screen';
+        unlockOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+            opacity: 0;
+            transition: opacity 1s ease;
+        `;
+        document.body.appendChild(unlockOverlay);
+        
+        setTimeout(() => unlockOverlay.style.opacity = '1', 100);
+        
+        // Route unlock text
+        const unlockText = document.createElement('div');
+        unlockText.style.cssText = `
+            color: #cc0000;
+            font-family: 'Crimson Text', Georgia, serif;
+            font-size: 2.5rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s ease;
+            text-shadow: 0 0 50px rgba(200, 0, 0, 1);
+            margin-bottom: 40px;
+        `;
+        unlockText.textContent = '"FALLEN DREAM" ROUTE UNLOCKED';
+        unlockOverlay.appendChild(unlockText);
+        
+        setTimeout(() => unlockText.style.opacity = '1', 500);
+        
+        // Create credits container
+        const creditsContainer = document.createElement('div');
+        creditsContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        `;
+        unlockOverlay.appendChild(creditsContainer);
+        console.log('Credits container created');
+        
+        // Credits data
+        const credits = [
+            { actor: 'Isaac', role: 'Luis' },
+            { actor: 'Jacob', role: 'Tanner' },
+            { actor: 'Gaven', role: 'The Narrator' }
+        ];
+        
+        // Create credit elements (hidden initially)
+        credits.forEach((credit, index) => {
+            const creditDiv = document.createElement('div');
+            creditDiv.style.cssText = `
+                color: #888888;
+                font-family: 'Crimson Text', Georgia, serif;
+                font-size: 1.5rem;
+                text-align: center;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 1s ease, transform 1s ease;
+            `;
+            creditDiv.innerHTML = `<span style="color: #ffffff; font-weight: bold;">${credit.actor}</span> <span style="color: #555555;">—</span> <span style="color: #cc6666; font-style: italic;">${credit.role}</span>`;
+            creditsContainer.appendChild(creditDiv);
+            
+            // Animate each credit appearing
+            setTimeout(() => {
+                console.log('Showing credit:', credit.actor);
+                creditDiv.style.opacity = '1';
+                creditDiv.style.transform = 'translateY(0)';
+            }, 2500 + (index * 2000)); // Start at 2.5s, each 2s apart
+        });
+        
+        // Set game state for Fallen Dream route
+        if (game.storyState) {
+            game.storyState.fallenDreamRoute = true;
+            game.storyState.isADream = true;
+        }
+        
+        // Transition to convoy shelter (extended time for credits)
+        // Credits timing: 2.5s + (2 * 2s) = 6.5s for last credit, plus 4s to read = 10.5s
+        setTimeout(() => {
+            console.log('Starting transition to convoy shelter');
+            this.hideStaticEffect();
+            
+            // Stop the music
+            if (game.audioManager) {
+                game.audioManager.stopCustomMusic(1.5);
+            }
+            
+            // Fade out
+            unlockOverlay.style.opacity = '0';
+            if (vignetteOverlay) vignetteOverlay.style.opacity = '0';
+            
+            setTimeout(() => {
+                unlockOverlay.remove();
+                if (vignetteOverlay) vignetteOverlay.remove();
+                
+                // Re-enable player controls
+                if (game.playerController) {
+                    game.playerController.enabled = true;
+                }
+                
+                // Load convoy shelter
+                game.sceneManager.loadScene('convoy_shelter');
+            }, 1500);
+        }, 12000); // Extended to 12 seconds for credits to show
+    }
+    
+    showStaticEffect(intensity = 0.3) {
+        // Remove existing static if present
+        if (this.staticOverlay) {
+            this.staticOverlay.remove();
+            this.staticAnimationId = null;
+        }
+        
+        this.staticOverlay = document.createElement('div');
+        this.staticOverlay.id = 'static-overlay';
+        this.staticOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: ${intensity};
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 255, 0.05) 2px,
+                rgba(255, 255, 255, 0.05) 4px
+            );
+            animation: staticNoise 0.15s steps(4) infinite;
+        `;
+        
+        // Add keyframe animation if not exists
+        if (!document.getElementById('static-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'static-keyframes';
+            style.textContent = `
+                @keyframes staticNoise {
+                    0% { background-position: 0 0; filter: contrast(1); }
+                    25% { background-position: 5px 5px; filter: contrast(1.1); }
+                    50% { background-position: -5px 10px; filter: contrast(0.9); }
+                    75% { background-position: 10px -5px; filter: contrast(1.05); }
+                    100% { background-position: 0 0; filter: contrast(1); }
+                }
+                @keyframes staticFlicker {
+                    0%, 100% { opacity: 0.8; }
+                    50% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Use CSS-based noise overlay instead of canvas for performance
+        const noiseLayer = document.createElement('div');
+        noiseLayer.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: ${intensity * 0.4};
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
+            background-size: 200px 200px;
+            animation: staticFlicker 0.1s steps(2) infinite;
+            mix-blend-mode: overlay;
+        `;
+        this.staticOverlay.appendChild(noiseLayer);
+        
+        document.body.appendChild(this.staticOverlay);
+    }
+    
+    hideStaticEffect() {
+        if (this.staticOverlay) {
+            this.staticOverlay.style.transition = 'opacity 1s ease';
+            this.staticOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (this.staticOverlay) {
+                    this.staticOverlay.remove();
+                    this.staticOverlay = null;
+                }
+            }, 1000);
+        }
+    }
+    
+    showBlurEffect() {
+        // Apply blur to the game canvas
+        const gameCanvas = document.querySelector('canvas');
+        if (gameCanvas) {
+            gameCanvas.style.transition = 'filter 2s ease';
+            gameCanvas.style.filter = 'blur(3px)';
+        }
+    }
+    
+    hideBlurEffect() {
+        const gameCanvas = document.querySelector('canvas');
+        if (gameCanvas) {
+            gameCanvas.style.transition = 'filter 1s ease';
+            gameCanvas.style.filter = 'none';
+        }
     }
     
     handleLuisDialogue(game) {
@@ -753,6 +1406,9 @@ export class RooftopScene {
             game.audioManager.startTheHum();
         }
         
+        // Play loud static burst sound
+        this.playLightEventStatic();
+        
         // Create vivid light event effects
         this.createVividLightEffects();
         
@@ -770,6 +1426,22 @@ export class RooftopScene {
     
     createVividLightEffects() {
         // Create multiple overlay layers for vivid effect
+        
+        // 0. BRIGHT WHITE FLASH - Initial impact
+        this.flashOverlay = document.createElement('div');
+        this.flashOverlay.id = 'flash-overlay';
+        this.flashOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0);
+            pointer-events: none;
+            z-index: 510;
+            transition: background 0.1s ease;
+        `;
+        document.body.appendChild(this.flashOverlay);
         
         // 1. Red tint overlay
         this.redOverlay = document.createElement('div');
@@ -855,36 +1527,72 @@ export class RooftopScene {
             }
             @keyframes screenShake {
                 0% { transform: translate(0, 0); }
-                25% { transform: translate(-3px, 2px); }
-                50% { transform: translate(3px, -2px); }
-                75% { transform: translate(-2px, -3px); }
+                25% { transform: translate(-5px, 4px); }
+                50% { transform: translate(5px, -4px); }
+                75% { transform: translate(-4px, -5px); }
                 100% { transform: translate(0, 0); }
+            }
+            @keyframes intenseShake {
+                0% { transform: translate(0, 0) rotate(0deg); }
+                10% { transform: translate(-8px, 6px) rotate(-0.5deg); }
+                20% { transform: translate(8px, -6px) rotate(0.5deg); }
+                30% { transform: translate(-6px, -8px) rotate(-0.3deg); }
+                40% { transform: translate(6px, 8px) rotate(0.3deg); }
+                50% { transform: translate(-8px, 4px) rotate(-0.5deg); }
+                60% { transform: translate(8px, -4px) rotate(0.5deg); }
+                70% { transform: translate(-4px, -6px) rotate(-0.3deg); }
+                80% { transform: translate(4px, 6px) rotate(0.3deg); }
+                90% { transform: translate(-6px, 2px) rotate(-0.2deg); }
+                100% { transform: translate(0, 0) rotate(0deg); }
+            }
+            @keyframes flashPulse {
+                0% { background: rgba(255, 255, 255, 0.9); }
+                100% { background: rgba(255, 255, 255, 0); }
             }
         `;
         document.head.appendChild(style);
         
-        // Fade in effects progressively
+        // Get game container for shake
+        const gameContainer = document.getElementById('game-container') || document.body;
+        
+        // IMMEDIATE BRIGHT FLASH when light hits
+        this.flashOverlay.style.background = 'rgba(255, 255, 255, 1)';
+        gameContainer.style.animation = 'intenseShake 0.15s ease-in-out';
+        
+        // Flash fades quickly
         setTimeout(() => {
-            this.hazeOverlay.style.opacity = '1';
-            this.hazeOverlay.style.backdropFilter = 'blur(2px)';
-        }, 500);
+            this.flashOverlay.style.transition = 'background 0.5s ease';
+            this.flashOverlay.style.background = 'rgba(255, 255, 255, 0.7)';
+        }, 100);
         
         setTimeout(() => {
-            this.redOverlay.style.background = 'rgba(180, 30, 30, 0.15)';
+            this.flashOverlay.style.background = 'rgba(255, 255, 255, 0.3)';
+        }, 300);
+        
+        setTimeout(() => {
+            this.flashOverlay.style.transition = 'background 1s ease';
+            this.flashOverlay.style.background = 'rgba(255, 255, 255, 0)';
+            this.hazeOverlay.style.opacity = '1';
+            this.hazeOverlay.style.backdropFilter = 'blur(3px)';
+        }, 600);
+        
+        setTimeout(() => {
+            this.redOverlay.style.background = 'rgba(180, 30, 30, 0.2)';
             this.vignetteOverlay.style.opacity = '1';
+            // Start continuous shake
+            gameContainer.style.animation = 'screenShake 0.08s infinite';
         }, 1000);
         
         setTimeout(() => {
             this.motionBlurOverlay.style.opacity = '1';
-            // Add screen shake to game container
-            const gameContainer = document.getElementById('game-container') || document.body;
-            gameContainer.style.animation = 'screenShake 0.1s infinite';
         }, 1500);
         
         // Intensify over time
         setTimeout(() => {
-            this.redOverlay.style.background = 'rgba(180, 30, 30, 0.25)';
-            this.hazeOverlay.style.backdropFilter = 'blur(4px)';
+            this.redOverlay.style.background = 'rgba(180, 30, 30, 0.35)';
+            this.hazeOverlay.style.backdropFilter = 'blur(5px)';
+            // Make shake more intense
+            gameContainer.style.animation = 'intenseShake 0.12s infinite';
         }, 3000);
     }
     
@@ -1056,21 +1764,32 @@ export class RooftopScene {
                 this.outerGlowLight.intensity = 20;
                 this.tendrilGlow.intensity = 30;
                 this.scene.background = new THREE.Color(0xffffee);
-            } else if (this.lightDescendTimer >= 4) {
-                // Transition to convoy scene
+            } else if (this.lightDescendTimer >= 4 && !this.dialogueShown) {
+                // Transition - only show once
+                this.dialogueShown = true;
+                this.lightEventTriggered = false; // Prevent repeat
+                
+                // Play narrator voiceline with 250% volume and echo effect
+                this.playNarratorVoiceline();
+                
+                // Show narrator text, then guide player to the edge
                 this.game.dialogueSystem.showDialogue({
                     speaker: 'NARRATOR',
-                    text: "The Light touched Luis, and in that moment, everything changed. What followed was chaos—the world fracturing, society crumbling, and Luis... Luis became something new.",
-                    choices: [
-                        {
-                            text: "Three months later...",
-                            action: () => {
-                                this.game.sceneManager.loadScene('convoy_shelter');
-                            }
-                        }
-                    ]
+                    text: "The Light hit Luis, and in that moment, everything changed. What followed was chaos—the world fracturing, society crumbling, and Luis... Luis became something new.",
+                    onComplete: () => {
+                        // After narrator finishes, prompt player to approach edge
+                        setTimeout(() => {
+                            this.game.dialogueSystem.showDialogue({
+                                speaker: 'ADRIAN',
+                                text: "Luis... No... This can't be happening. I need to... I need to...",
+                                onComplete: () => {
+                                    // Enable jump mechanic and guide player
+                                    this.enableJumpMechanic();
+                                }
+                            });
+                        }, 1000);
+                    }
                 });
-                this.lightEventTriggered = false; // Prevent repeat
             }
         }
         
@@ -1081,5 +1800,50 @@ export class RooftopScene {
         
         // Update NPCs
         this.npcs.forEach(npc => npc.update(deltaTime));
+    }
+    
+    playNarratorVoiceline() {
+        // Play voiceline simply without effects
+        const audio = new Audio('/voicelines/narrator-light-hit-luis.mp3');
+        audio.volume = 1.0;
+        audio.play().then(() => {
+            console.log('Narrator voiceline playing');
+        }).catch(error => {
+            console.error('Error playing narrator voiceline:', error);
+        });
+    }
+    
+    playLightEventStatic() {
+        // Create audio context for static burst
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create white noise for static
+        const bufferSize = audioContext.sampleRate * 2; // 2 seconds of static
+        const noiseBuffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
+        
+        for (let channel = 0; channel < 2; channel++) {
+            const data = noiseBuffer.getChannelData(channel);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1);
+            }
+        }
+        
+        const noiseSource = audioContext.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        
+        // Simple gain envelope
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+        
+        // Connect directly
+        noiseSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Play
+        noiseSource.start(0);
+        noiseSource.stop(audioContext.currentTime + 2);
+        
+        console.log('Light event static playing');
     }
 }

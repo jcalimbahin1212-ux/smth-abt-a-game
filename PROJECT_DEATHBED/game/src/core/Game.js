@@ -144,8 +144,17 @@ export class Game {
         
         document.body.appendChild(this.startOverlay);
         
-        // Handle click to start
-        const startHandler = () => {
+        // Handle click to start - ensure both listeners are removed when either fires
+        let started = false;
+        const startHandler = (e) => {
+            // Prevent double-firing
+            if (started) return;
+            started = true;
+            
+            // Remove both listeners immediately
+            this.startOverlay.removeEventListener('click', startHandler);
+            document.removeEventListener('keydown', startHandler);
+            
             this.startOverlay.style.transition = 'opacity 1s ease';
             this.startOverlay.style.opacity = '0';
             
@@ -157,8 +166,8 @@ export class Game {
             }, 1000);
         };
         
-        this.startOverlay.addEventListener('click', startHandler, { once: true });
-        document.addEventListener('keydown', startHandler, { once: true });
+        this.startOverlay.addEventListener('click', startHandler);
+        document.addEventListener('keydown', startHandler);
     }
     
     createStartScreenParticles() {

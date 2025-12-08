@@ -41,6 +41,10 @@ export class CreditsAnimation {
         this.credits = [
             { time: 5, text: "PROJECT DEATHBED", style: 'title' },
             { time: 10, text: "A Story of Brotherhood", style: 'subtitle' },
+            { time: 15, text: "CAST", style: 'section-title' },
+            { time: 17, text: "Isaac — Luis", style: 'cast' },
+            { time: 20, text: "Jacob — Tanner", style: 'cast' },
+            { time: 23, text: "Gaven — The Narrator", style: 'cast' },
             { time: 66, text: "Thank you for playing", style: 'thanks' },
             { time: 70, text: "Made by James C.", style: 'credit-final' }
         ];
@@ -319,6 +323,24 @@ export class CreditsAnimation {
                 letter-spacing: 0.2em;
                 margin-top: 20px;
                 animation: lyricFadeIn 2s ease forwards;
+            }
+            
+            .credits-section-title {
+                font-size: 1.5vw;
+                font-weight: 400;
+                color: #6688aa;
+                letter-spacing: 0.3em;
+                text-transform: uppercase;
+                margin-top: 40px;
+                animation: lyricFadeIn 1.5s ease forwards;
+            }
+            
+            .credits-cast {
+                font-size: 1.8vw;
+                font-weight: 300;
+                color: #a0b8d0;
+                letter-spacing: 0.1em;
+                animation: lyricFadeIn 1.5s ease forwards;
             }
             
             .credits-thanks {

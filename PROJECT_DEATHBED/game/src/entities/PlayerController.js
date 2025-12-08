@@ -1,6 +1,7 @@
 /**
  * PROJECT DEATHBED - Player Controller
  * First-person camera controls with smooth movement aligned to POV
+ * Features realistic head bob, breathing sway, and smooth camera effects
  */
 
 import * as THREE from 'three';
@@ -34,6 +35,30 @@ export class PlayerController {
         // Collision
         this.playerRadius = 0.3;
         this.playerHeight = 1.7;
+        this.baseHeight = 1.7; // Store base camera height
+        
+        // === HEAD BOB SETTINGS ===
+        this.headBobEnabled = true;
+        this.headBobTimer = 0;
+        this.headBobFrequency = 8; // How fast the bob cycles (higher = faster)
+        this.headBobAmplitudeY = 0.035; // Vertical bob amount
+        this.headBobAmplitudeX = 0.015; // Horizontal sway amount
+        this.headBobSmoothing = 0.1; // Smooth transitions
+        this.currentBobOffset = new THREE.Vector2(0, 0);
+        this.targetBobOffset = new THREE.Vector2(0, 0);
+        this.isMoving = false;
+        this.wasMoving = false;
+        
+        // === BREATHING SWAY (idle) ===
+        this.breathingTimer = 0;
+        this.breathingFrequency = 0.8; // Slow, natural breathing
+        this.breathingAmplitudeY = 0.008; // Very subtle vertical
+        this.breathingAmplitudeRoll = 0.002; // Tiny roll sway
+        
+        // === CAMERA SMOOTHING ===
+        this.cameraTilt = 0; // For slight tilt when strafing
+        this.targetCameraTilt = 0;
+        this.tiltSmoothing = 0.08;
         
         // Raycaster for collision detection
         this.raycaster = new THREE.Raycaster();
@@ -93,6 +118,7 @@ export class PlayerController {
         
         // Handle movement input
         const moveVector = new THREE.Vector3(0, 0, 0);
+        let strafeDirection = 0; // For camera tilt
         
         if (this.inputManager.isKeyPressed('KeyW')) {
             moveVector.add(this.forward);
@@ -102,13 +128,19 @@ export class PlayerController {
         }
         if (this.inputManager.isKeyPressed('KeyA')) {
             moveVector.sub(this.right);
+            strafeDirection = 1; // Tilting right when moving left
         }
         if (this.inputManager.isKeyPressed('KeyD')) {
             moveVector.add(this.right);
+            strafeDirection = -1; // Tilting left when moving right
         }
         
+        // Track movement state
+        this.wasMoving = this.isMoving;
+        this.isMoving = moveVector.length() > 0;
+        
         // Normalize and apply movement
-        if (moveVector.length() > 0) {
+        if (this.isMoving) {
             moveVector.normalize();
             
             // Calculate new position
@@ -120,9 +152,61 @@ export class PlayerController {
             newPosition.x = Math.max(this.bounds.minX, Math.min(this.bounds.maxX, newPosition.x));
             newPosition.z = Math.max(this.bounds.minZ, Math.min(this.bounds.maxZ, newPosition.z));
             
-            // Apply position
-            this.camera.position.copy(newPosition);
+            // Apply position (without Y - we handle that separately for head bob)
+            this.camera.position.x = newPosition.x;
+            this.camera.position.z = newPosition.z;
         }
+        
+        // === HEAD BOB & BREATHING EFFECTS ===
+        this.updateHeadBob(deltaTime, strafeDirection);
+    }
+    
+    updateHeadBob(deltaTime, strafeDirection) {
+        if (!this.headBobEnabled) {
+            this.camera.position.y = this.baseHeight;
+            return;
+        }
+        
+        // Update strafe tilt
+        this.targetCameraTilt = strafeDirection * 0.015; // Subtle lean
+        this.cameraTilt += (this.targetCameraTilt - this.cameraTilt) * this.tiltSmoothing;
+        
+        if (this.isMoving) {
+            // Walking head bob
+            this.headBobTimer += deltaTime * this.headBobFrequency;
+            
+            // Natural walking pattern - vertical bob with slight horizontal sway
+            // Using sine for vertical (two bounces per step cycle)
+            // Using cosine for horizontal (one sway per step cycle)
+            this.targetBobOffset.y = Math.sin(this.headBobTimer * 2) * this.headBobAmplitudeY;
+            this.targetBobOffset.x = Math.cos(this.headBobTimer) * this.headBobAmplitudeX;
+            
+        } else {
+            // Idle - subtle breathing sway
+            this.breathingTimer += deltaTime * this.breathingFrequency;
+            
+            // Very gentle breathing motion
+            this.targetBobOffset.y = Math.sin(this.breathingTimer * Math.PI * 2) * this.breathingAmplitudeY;
+            this.targetBobOffset.x = Math.cos(this.breathingTimer * Math.PI) * 0.003;
+            
+            // Slowly decay head bob timer when stopped for smooth transition
+            this.headBobTimer *= 0.95;
+        }
+        
+        // Smooth interpolation to target
+        this.currentBobOffset.x += (this.targetBobOffset.x - this.currentBobOffset.x) * this.headBobSmoothing;
+        this.currentBobOffset.y += (this.targetBobOffset.y - this.currentBobOffset.y) * this.headBobSmoothing;
+        
+        // Apply vertical bob to camera height
+        this.camera.position.y = this.baseHeight + this.currentBobOffset.y;
+        
+        // Apply horizontal sway and tilt to camera rotation
+        // We need to include the bob sway in the euler rotation
+        const rollFromBob = this.currentBobOffset.x * 0.5; // Subtle roll from horizontal sway
+        const totalRoll = this.cameraTilt + rollFromBob;
+        
+        this.euler.set(this.pitch, this.yaw, totalRoll);
+        this.camera.quaternion.setFromEuler(this.euler);
     }
     
     setBounds(boundsOrMinX, maxX, minZ, maxZ) {
