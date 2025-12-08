@@ -113,6 +113,78 @@ export class ConvoyShelterScene {
         backWall.receiveShadow = true;
         this.scene.add(backWall);
         
+        // === VISIBLE EXIT DOOR (back wall) ===
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x3a3540, // Dark metal door
+            roughness: 0.6,
+            metalness: 0.4
+        });
+        
+        // Main door panel
+        const exitDoorPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(1.2, 2.4, 0.08),
+            doorMaterial
+        );
+        exitDoorPanel.position.set(0, 1.2, -4.92);
+        exitDoorPanel.castShadow = true;
+        this.scene.add(exitDoorPanel);
+        
+        // Door frame
+        const doorFrameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2a2530,
+            roughness: 0.65,
+            metalness: 0.5
+        });
+        
+        // Left frame
+        const exitDoorLeftFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.6, 0.12),
+            doorFrameMaterial
+        );
+        exitDoorLeftFrame.position.set(-0.65, 1.3, -4.94);
+        this.scene.add(exitDoorLeftFrame);
+        
+        // Right frame
+        const exitDoorRightFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.6, 0.12),
+            doorFrameMaterial
+        );
+        exitDoorRightFrame.position.set(0.65, 1.3, -4.94);
+        this.scene.add(exitDoorRightFrame);
+        
+        // Top frame
+        const exitDoorTopFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(1.4, 0.1, 0.12),
+            doorFrameMaterial
+        );
+        exitDoorTopFrame.position.set(0, 2.55, -4.94);
+        this.scene.add(exitDoorTopFrame);
+        
+        // Door handle (metal)
+        const doorHandleMaterial = new THREE.MeshStandardMaterial({
+            color: 0x707080,
+            roughness: 0.3,
+            metalness: 0.9
+        });
+        const exitDoorHandle = new THREE.Mesh(
+            new THREE.BoxGeometry(0.15, 0.05, 0.08),
+            doorHandleMaterial
+        );
+        exitDoorHandle.position.set(0.4, 1.1, -4.85);
+        this.scene.add(exitDoorHandle);
+        
+        // Small "EXIT" sign above door
+        const exitSign = new THREE.Mesh(
+            new THREE.BoxGeometry(0.4, 0.15, 0.02),
+            new THREE.MeshStandardMaterial({
+                color: 0x882222,
+                emissive: 0x441111,
+                emissiveIntensity: 0.3
+            })
+        );
+        exitSign.position.set(0, 2.75, -4.9);
+        this.scene.add(exitSign);
+        
         // Left wall
         const leftWall = new THREE.Mesh(
             new THREE.PlaneGeometry(10, 4),
@@ -122,6 +194,48 @@ export class ConvoyShelterScene {
         leftWall.rotation.y = Math.PI / 2;
         leftWall.receiveShadow = true;
         this.scene.add(leftWall);
+        
+        // === VISIBLE WORKSHOP DOOR (left wall) ===
+        // Main door panel
+        const workshopDoorPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 2.4, 1.0),
+            doorMaterial.clone()
+        );
+        workshopDoorPanel.position.set(-5.92, 1.2, 0);
+        workshopDoorPanel.castShadow = true;
+        this.scene.add(workshopDoorPanel);
+        
+        // Left frame
+        const workshopDoorLeftFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 2.6, 0.1),
+            doorFrameMaterial.clone()
+        );
+        workshopDoorLeftFrame.position.set(-5.94, 1.3, 0.55);
+        this.scene.add(workshopDoorLeftFrame);
+        
+        // Right frame
+        const workshopDoorRightFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 2.6, 0.1),
+            doorFrameMaterial.clone()
+        );
+        workshopDoorRightFrame.position.set(-5.94, 1.3, -0.55);
+        this.scene.add(workshopDoorRightFrame);
+        
+        // Top frame
+        const workshopDoorTopFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.1, 1.2),
+            doorFrameMaterial.clone()
+        );
+        workshopDoorTopFrame.position.set(-5.94, 2.55, 0);
+        this.scene.add(workshopDoorTopFrame);
+        
+        // Door handle
+        const workshopDoorHandle = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.05, 0.15),
+            doorHandleMaterial.clone()
+        );
+        workshopDoorHandle.position.set(-5.85, 1.1, 0.3);
+        this.scene.add(workshopDoorHandle);
         
         // Right wall with covered window
         const rightWall = new THREE.Mesh(

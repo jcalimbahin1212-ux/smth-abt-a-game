@@ -1803,14 +1803,34 @@ export class RooftopScene {
     }
     
     playNarratorVoiceline() {
-        // Play voiceline simply without effects
+        // Play voiceline with trimmed ending (remove last 300ms to cut mouse click)
         const audio = new Audio('/voicelines/narrator-light-hit-luis.mp3');
         audio.volume = 1.0;
-        audio.play().then(() => {
-            console.log('Narrator voiceline playing');
-        }).catch(error => {
-            console.error('Error playing narrator voiceline:', error);
+        
+        // When metadata loads, set up the trim
+        audio.addEventListener('loadedmetadata', () => {
+            const trimmedDuration = Math.max(0, audio.duration - 0.3); // Trim 300ms from end
+            
+            // Stop audio 300ms before the end
+            const checkTime = () => {
+                if (audio.currentTime >= trimmedDuration) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                } else if (!audio.paused) {
+                    requestAnimationFrame(checkTime);
+                }
+            };
+            
+            audio.play().then(() => {
+                console.log(`Narrator voiceline playing (trimmed from ${audio.duration.toFixed(2)}s to ${trimmedDuration.toFixed(2)}s)`);
+                requestAnimationFrame(checkTime);
+            }).catch(error => {
+                console.error('Error playing narrator voiceline:', error);
+            });
         });
+        
+        // Start loading the audio
+        audio.load();
     }
     
     playLightEventStatic() {

@@ -1892,6 +1892,91 @@ export class TannerHouseScene {
     }
     
     createInteractables() {
+        // === VISIBLE FRONT DOOR ===
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x5c4a3d, // Dark wood brown
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        // Main door panel
+        const doorPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(1.0, 2.2, 0.08),
+            doorMaterial
+        );
+        doorPanel.position.set(0, 1.1, 6.92);
+        doorPanel.castShadow = true;
+        doorPanel.receiveShadow = true;
+        this.scene.add(doorPanel);
+        
+        // Door frame (wood)
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a3c32,
+            roughness: 0.6,
+            metalness: 0.05
+        });
+        
+        // Left frame
+        const leftFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.4, 0.12),
+            frameMaterial
+        );
+        leftFrame.position.set(-0.55, 1.2, 6.94);
+        this.scene.add(leftFrame);
+        
+        // Right frame
+        const rightFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.4, 0.12),
+            frameMaterial
+        );
+        rightFrame.position.set(0.55, 1.2, 6.94);
+        this.scene.add(rightFrame);
+        
+        // Top frame
+        const topFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(1.2, 0.1, 0.12),
+            frameMaterial
+        );
+        topFrame.position.set(0, 2.35, 6.94);
+        this.scene.add(topFrame);
+        
+        // Door handle
+        const handleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xb8a060,
+            roughness: 0.3,
+            metalness: 0.8
+        });
+        const handle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.02, 0.02, 0.12, 8),
+            handleMaterial
+        );
+        handle.position.set(0.35, 1.0, 6.85);
+        handle.rotation.x = Math.PI / 2;
+        this.scene.add(handle);
+        
+        // Door panel details (raised panels)
+        const panelDetailMaterial = new THREE.MeshStandardMaterial({
+            color: 0x6b5548,
+            roughness: 0.65,
+            metalness: 0.1
+        });
+        
+        // Upper panel
+        const upperPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.7, 0.6, 0.02),
+            panelDetailMaterial
+        );
+        upperPanel.position.set(-0.05, 1.7, 6.85);
+        this.scene.add(upperPanel);
+        
+        // Lower panel
+        const lowerPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.7, 0.6, 0.02),
+            panelDetailMaterial
+        );
+        lowerPanel.position.set(-0.05, 0.6, 6.85);
+        this.scene.add(lowerPanel);
+
         // Exit door (main room - front)
         const exitDoor = new InteractableObject({
             name: 'Exit Door',

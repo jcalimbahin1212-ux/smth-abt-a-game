@@ -1335,6 +1335,13 @@ export class NPCEntity {
     }
     
     interact(game) {
+        // Check for custom onInteract handler first (like InteractableObject)
+        if (this.onInteract) {
+            this.onInteract(game);
+            return;
+        }
+        
+        // Fallback to default dialogue handling
         const dialogue = this.getDialogue();
         if (dialogue) {
             game.dialogueSystem.startDialogue(this, dialogue);
