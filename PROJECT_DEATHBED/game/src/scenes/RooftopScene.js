@@ -299,7 +299,11 @@ export class RooftopScene {
         this.luis = new NPCEntity({
             name: 'Luis',
             position: new THREE.Vector3(3, 0, -2),
-            color: 0x5a6a7a,
+            bodyColor: 0x5a6a7a,
+            skinColor: 0xd4a574,
+            hairColor: 0x2a1a0a,
+            hairStyle: 'wavy', // Luis has wavy hair
+            bodyType: 'slim',
             height: 1.6,
             glowColor: null // No glow yet - he hasn't been touched
         });

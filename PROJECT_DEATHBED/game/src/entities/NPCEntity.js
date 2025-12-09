@@ -14,6 +14,8 @@ export class NPCEntity {
         this.bodyColor = options.bodyColor || 0x6a6a75; // Slightly lighter
         this.skinColor = options.skinColor || 0xdac4a4; // Warmer, lighter skin
         this.hairColor = options.hairColor || 0x3a2a18;
+        this.hairStyle = options.hairStyle || 'short'; // 'short', 'medium', 'long', 'wavy', 'spiky', 'slickedBack', 'bald'
+        this.bodyType = options.bodyType || 'average'; // 'slim', 'average', 'athletic', 'heavy'
         this.isGlowing = options.isGlowing || false;
         this.glowColor = options.glowColor || 0xd4b247; // Warmer amber
         this.glowIntensity = options.glowIntensity || 0.4;
@@ -683,55 +685,17 @@ export class NPCEntity {
         headGroup.add(head);
         this.head = head;
         
-        // === DETAILED HAIR SYSTEM ===
-        // Main hair volume
-        const hairBaseGeometry = new THREE.SphereGeometry(0.13 * scale, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        // === DETAILED HAIR SYSTEM - Multiple Styles ===
         const hairMaterial = new THREE.MeshStandardMaterial({
             color: this.hairColor,
             roughness: 0.95
         });
-        const hairBase = new THREE.Mesh(hairBaseGeometry, hairMaterial);
-        hairBase.position.y = 0.03 * scale;
-        hairBase.scale.set(1, 1, 1);
-        headGroup.add(hairBase);
-        
-        // Hair strands for texture
         const strandMaterial = new THREE.MeshStandardMaterial({
             color: new THREE.Color(this.hairColor).multiplyScalar(0.85),
             roughness: 0.9
         });
         
-        // Front bangs (varied sizes for natural look)
-        const bangGeometry = new THREE.CapsuleGeometry(0.018 * scale, 0.055 * scale, 4, 8);
-        for (let i = 0; i < 7; i++) {
-            const bang = new THREE.Mesh(bangGeometry, i % 2 === 0 ? hairMaterial : strandMaterial);
-            bang.position.set((-0.05 + i * 0.017) * scale, 0.08 * scale, 0.09 * scale);
-            bang.rotation.set(0.35 + Math.random() * 0.1, 0, (i - 3) * 0.08);
-            bang.scale.set(0.7 + Math.random() * 0.3, 0.8 + Math.random() * 0.4, 0.5);
-            headGroup.add(bang);
-        }
-        
-        // Side hair
-        const sideHairGeometry = new THREE.CapsuleGeometry(0.022 * scale, 0.045 * scale, 4, 8);
-        
-        for (let i = 0; i < 3; i++) {
-            const leftSide = new THREE.Mesh(sideHairGeometry, strandMaterial);
-            leftSide.position.set(-0.11 * scale, (0.04 - i * 0.02) * scale, (0.04 - i * 0.02) * scale);
-            leftSide.rotation.z = 0.3 + i * 0.1;
-            headGroup.add(leftSide);
-            
-            const rightSide = new THREE.Mesh(sideHairGeometry, strandMaterial);
-            rightSide.position.set(0.11 * scale, (0.04 - i * 0.02) * scale, (0.04 - i * 0.02) * scale);
-            rightSide.rotation.z = -0.3 - i * 0.1;
-            headGroup.add(rightSide);
-        }
-        
-        // Back hair volume
-        const backHairGeometry = new THREE.SphereGeometry(0.1 * scale, 12, 12, 0, Math.PI, Math.PI * 0.3, Math.PI * 0.5);
-        const backHair = new THREE.Mesh(backHairGeometry, hairMaterial);
-        backHair.position.set(0, 0.02 * scale, -0.06 * scale);
-        backHair.rotation.y = Math.PI;
-        headGroup.add(backHair);
+        this.createStandingHairStyle(headGroup, scale, hairMaterial, strandMaterial);
         
         // === REFINED FACIAL FEATURES ===
         // Forehead (subtle brow ridge)
@@ -1356,5 +1320,304 @@ export class NPCEntity {
                 this.body.material.emissive = new THREE.Color(0x000000);
             }
         }
+    }
+    
+    // === HAIR STYLE METHODS ===
+    createStandingHairStyle(headGroup, scale, hairMaterial, strandMaterial) {
+        switch (this.hairStyle) {
+            case 'short':
+                this.createShortHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'medium':
+                this.createMediumHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'long':
+                this.createLongHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'wavy':
+                this.createWavyHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'spiky':
+                this.createSpikyHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'slickedBack':
+                this.createSlickedBackHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+                break;
+            case 'bald':
+                // No hair
+                break;
+            default:
+                this.createShortHairStanding(headGroup, scale, hairMaterial, strandMaterial);
+        }
+    }
+    
+    createShortHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Clean, short hair - not a bowlcut
+        const topGeo = new THREE.SphereGeometry(0.12 * scale, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        const topHair = new THREE.Mesh(topGeo, hairMaterial);
+        topHair.position.y = 0.04 * scale;
+        headGroup.add(topHair);
+        
+        // Textured top with small strands
+        for (let i = 0; i < 15; i++) {
+            const angle = (i / 15) * Math.PI * 2;
+            const radius = 0.08 + Math.random() * 0.03;
+            const strandGeo = new THREE.BoxGeometry(0.015 * scale, 0.03 * scale, 0.015 * scale);
+            const strand = new THREE.Mesh(strandGeo, i % 2 === 0 ? hairMaterial : strandMaterial);
+            strand.position.set(
+                Math.cos(angle) * radius * scale,
+                0.08 * scale,
+                Math.sin(angle) * radius * 0.85 * scale
+            );
+            strand.rotation.set(
+                Math.sin(angle) * 0.2,
+                angle,
+                Math.cos(angle) * 0.15
+            );
+            headGroup.add(strand);
+        }
+        
+        // Sides - tapered, not bowl-like
+        const sideGeo = new THREE.BoxGeometry(0.02 * scale, 0.06 * scale, 0.08 * scale);
+        
+        const leftSide = new THREE.Mesh(sideGeo, hairMaterial);
+        leftSide.position.set(-0.1 * scale, 0.02 * scale, 0);
+        headGroup.add(leftSide);
+        
+        const rightSide = new THREE.Mesh(sideGeo, hairMaterial);
+        rightSide.position.set(0.1 * scale, 0.02 * scale, 0);
+        headGroup.add(rightSide);
+        
+        // Back - short and tapered
+        const backGeo = new THREE.BoxGeometry(0.16 * scale, 0.06 * scale, 0.025 * scale);
+        const backHair = new THREE.Mesh(backGeo, hairMaterial);
+        backHair.position.set(0, 0.02 * scale, -0.09 * scale);
+        headGroup.add(backHair);
+    }
+    
+    createMediumHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Fuller top
+        const topGeo = new THREE.SphereGeometry(0.125 * scale, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        const topHair = new THREE.Mesh(topGeo, hairMaterial);
+        topHair.position.y = 0.04 * scale;
+        headGroup.add(topHair);
+        
+        // Side volume
+        const sideGeo = new THREE.CapsuleGeometry(0.03 * scale, 0.1 * scale, 6, 8);
+        
+        const leftSide = new THREE.Mesh(sideGeo, hairMaterial);
+        leftSide.position.set(-0.1 * scale, 0 * scale, 0.02 * scale);
+        leftSide.rotation.z = 0.2;
+        headGroup.add(leftSide);
+        
+        const rightSide = new THREE.Mesh(sideGeo, hairMaterial);
+        rightSide.position.set(0.1 * scale, 0 * scale, 0.02 * scale);
+        rightSide.rotation.z = -0.2;
+        headGroup.add(rightSide);
+        
+        // Fringe/bangs - natural looking
+        for (let i = 0; i < 5; i++) {
+            const fringeGeo = new THREE.CapsuleGeometry(0.015 * scale, 0.04 * scale, 4, 6);
+            const fringe = new THREE.Mesh(fringeGeo, i % 2 === 0 ? hairMaterial : strandMaterial);
+            fringe.position.set((-0.04 + i * 0.02) * scale, 0.06 * scale, 0.1 * scale);
+            fringe.rotation.x = 0.4 + Math.random() * 0.2;
+            fringe.rotation.z = (i - 2) * 0.1;
+            headGroup.add(fringe);
+        }
+        
+        // Back - medium length
+        const backGeo = new THREE.BoxGeometry(0.18 * scale, 0.12 * scale, 0.03 * scale);
+        const backHair = new THREE.Mesh(backGeo, hairMaterial);
+        backHair.position.set(0, -0.02 * scale, -0.08 * scale);
+        headGroup.add(backHair);
+    }
+    
+    createLongHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Top volume
+        const topGeo = new THREE.SphereGeometry(0.13 * scale, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        const topHair = new THREE.Mesh(topGeo, hairMaterial);
+        topHair.position.y = 0.05 * scale;
+        headGroup.add(topHair);
+        
+        // Long flowing sides
+        const sideGeo = new THREE.CapsuleGeometry(0.04 * scale, 0.25 * scale, 6, 8);
+        
+        const leftSide = new THREE.Mesh(sideGeo, hairMaterial);
+        leftSide.position.set(-0.1 * scale, -0.12 * scale, 0.02 * scale);
+        leftSide.rotation.z = 0.15;
+        headGroup.add(leftSide);
+        
+        const rightSide = new THREE.Mesh(sideGeo, hairMaterial);
+        rightSide.position.set(0.1 * scale, -0.12 * scale, 0.02 * scale);
+        rightSide.rotation.z = -0.15;
+        headGroup.add(rightSide);
+        
+        // Additional side strands
+        for (let i = 0; i < 3; i++) {
+            const strandGeo = new THREE.CapsuleGeometry(0.02 * scale, 0.2 * scale, 4, 6);
+            
+            const leftStrand = new THREE.Mesh(strandGeo, strandMaterial);
+            leftStrand.position.set((-0.08 - i * 0.02) * scale, -0.1 * scale, (0.04 - i * 0.02) * scale);
+            leftStrand.rotation.z = 0.1 + i * 0.05;
+            headGroup.add(leftStrand);
+            
+            const rightStrand = new THREE.Mesh(strandGeo, strandMaterial);
+            rightStrand.position.set((0.08 + i * 0.02) * scale, -0.1 * scale, (0.04 - i * 0.02) * scale);
+            rightStrand.rotation.z = -0.1 - i * 0.05;
+            headGroup.add(rightStrand);
+        }
+        
+        // Long back
+        const backGeo = new THREE.BoxGeometry(0.2 * scale, 0.35 * scale, 0.04 * scale);
+        const backHair = new THREE.Mesh(backGeo, hairMaterial);
+        backHair.position.set(0, -0.15 * scale, -0.08 * scale);
+        headGroup.add(backHair);
+        
+        // Extra back layers for volume
+        const backLayer2 = new THREE.Mesh(
+            new THREE.BoxGeometry(0.16 * scale, 0.3 * scale, 0.025 * scale),
+            strandMaterial
+        );
+        backLayer2.position.set(0, -0.12 * scale, -0.1 * scale);
+        headGroup.add(backLayer2);
+    }
+    
+    createWavyHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Voluminous top
+        const topGeo = new THREE.SphereGeometry(0.14 * scale, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        const topHair = new THREE.Mesh(topGeo, hairMaterial);
+        topHair.position.y = 0.05 * scale;
+        headGroup.add(topHair);
+        
+        // Wavy strands all around
+        for (let i = 0; i < 20; i++) {
+            const angle = (i / 20) * Math.PI * 2;
+            const isBack = angle > Math.PI * 0.3 && angle < Math.PI * 1.7;
+            const length = isBack ? 0.18 : 0.12;
+            
+            const strandGeo = new THREE.CylinderGeometry(
+                0.018 * scale,
+                0.012 * scale,
+                length * scale,
+                6
+            );
+            const strand = new THREE.Mesh(strandGeo, i % 3 === 0 ? strandMaterial : hairMaterial);
+            
+            const x = Math.cos(angle) * 0.1 * scale;
+            const z = Math.sin(angle) * 0.09 * scale;
+            const waveOffset = Math.sin(i * 1.2) * 0.015 * scale;
+            
+            strand.position.set(x + waveOffset, -length/2 * scale, z);
+            strand.rotation.z = Math.cos(angle) * 0.35;
+            strand.rotation.x = -Math.sin(angle) * 0.35;
+            
+            headGroup.add(strand);
+        }
+        
+        // Additional wave curls on top
+        for (let i = 0; i < 8; i++) {
+            const curlGeo = new THREE.TorusGeometry(0.02 * scale, 0.008 * scale, 4, 8, Math.PI);
+            const curl = new THREE.Mesh(curlGeo, hairMaterial);
+            const angle = (i / 8) * Math.PI * 2;
+            curl.position.set(
+                Math.cos(angle) * 0.06 * scale,
+                0.1 * scale,
+                Math.sin(angle) * 0.05 * scale
+            );
+            curl.rotation.set(Math.random(), angle, Math.random() * 0.5);
+            headGroup.add(curl);
+        }
+    }
+    
+    createSpikyHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Base - smaller to make spikes stand out more
+        const baseGeo = new THREE.SphereGeometry(0.10 * scale, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.4);
+        const baseHair = new THREE.Mesh(baseGeo, hairMaterial);
+        baseHair.position.y = 0.03 * scale;
+        headGroup.add(baseHair);
+        
+        // Dramatic spikes pointing up and outward - more visible
+        for (let i = 0; i < 30; i++) {
+            const angle = (i / 30) * Math.PI * 2;
+            const heightVar = 0.08 + Math.random() * 0.06; // Taller spikes
+            const radiusVar = 0.06 + Math.random() * 0.04;
+            
+            const spikeGeo = new THREE.ConeGeometry(0.015 * scale, heightVar * scale, 4);
+            const spike = new THREE.Mesh(spikeGeo, i % 2 === 0 ? hairMaterial : strandMaterial);
+            
+            spike.position.set(
+                Math.cos(angle) * radiusVar * scale,
+                0.1 * scale + Math.random() * 0.04 * scale,
+                Math.sin(angle) * (radiusVar * 0.85) * scale
+            );
+            
+            // Point strongly outward and up
+            spike.rotation.x = -Math.sin(angle) * 0.9;
+            spike.rotation.z = Math.cos(angle) * 0.9;
+            
+            headGroup.add(spike);
+        }
+        
+        // Central tall spikes - more prominent
+        for (let i = 0; i < 12; i++) {
+            const spikeGeo = new THREE.ConeGeometry(0.012 * scale, 0.14 * scale, 4);
+            const spike = new THREE.Mesh(spikeGeo, i % 2 === 0 ? hairMaterial : strandMaterial);
+            spike.position.set(
+                (Math.random() - 0.5) * 0.1 * scale,
+                0.14 * scale,
+                (Math.random() - 0.5) * 0.08 * scale
+            );
+            spike.rotation.x = (Math.random() - 0.5) * 0.6;
+            spike.rotation.z = (Math.random() - 0.5) * 0.6;
+            headGroup.add(spike);
+        }
+        
+        // Extra front spikes for distinctive look
+        for (let i = 0; i < 5; i++) {
+            const spikeGeo = new THREE.ConeGeometry(0.01 * scale, 0.1 * scale, 4);
+            const spike = new THREE.Mesh(spikeGeo, hairMaterial);
+            spike.position.set(
+                (-0.04 + i * 0.02) * scale,
+                0.1 * scale,
+                0.08 * scale
+            );
+            spike.rotation.x = 0.6; // Point forward
+            spike.rotation.z = (i - 2) * 0.15;
+            headGroup.add(spike);
+        }
+    }
+    
+    createSlickedBackHairStanding(headGroup, scale, hairMaterial, strandMaterial) {
+        // Slicked back top - smooth and swept back
+        const topGeo = new THREE.SphereGeometry(0.12 * scale, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.4);
+        const topHair = new THREE.Mesh(topGeo, hairMaterial);
+        topHair.position.set(0, 0.04 * scale, -0.02 * scale);
+        headGroup.add(topHair);
+        
+        // Smooth sides - close to head
+        const sideGeo = new THREE.BoxGeometry(0.018 * scale, 0.08 * scale, 0.1 * scale);
+        
+        const leftSide = new THREE.Mesh(sideGeo, hairMaterial);
+        leftSide.position.set(-0.105 * scale, 0.01 * scale, -0.01 * scale);
+        headGroup.add(leftSide);
+        
+        const rightSide = new THREE.Mesh(sideGeo, hairMaterial);
+        rightSide.position.set(0.105 * scale, 0.01 * scale, -0.01 * scale);
+        headGroup.add(rightSide);
+        
+        // Swept back strands for texture
+        for (let i = 0; i < 6; i++) {
+            const strandGeo = new THREE.BoxGeometry(0.03 * scale, 0.012 * scale, 0.08 * scale);
+            const strand = new THREE.Mesh(strandGeo, i % 2 === 0 ? hairMaterial : strandMaterial);
+            strand.position.set((-0.06 + i * 0.024) * scale, 0.07 * scale, 0.02 * scale);
+            strand.rotation.x = -0.3;
+            headGroup.add(strand);
+        }
+        
+        // Back - neat and short
+        const backGeo = new THREE.BoxGeometry(0.18 * scale, 0.1 * scale, 0.025 * scale);
+        const backHair = new THREE.Mesh(backGeo, hairMaterial);
+        backHair.position.set(0, -0.01 * scale, -0.1 * scale);
+        headGroup.add(backHair);
     }
 }

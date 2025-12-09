@@ -646,6 +646,10 @@ export class ConvoyShelterScene {
             position: new THREE.Vector3(-2, 0.6, 2),
             rotation: Math.PI / 6,
             bodyColor: 0x5a5a65,
+            skinColor: 0xd4a574,
+            hairColor: 0x2a1a0a,
+            hairStyle: 'wavy', // Luis has wavy hair
+            bodyType: 'slim',
             isGlowing: true,
             glowColor: 0xc9a227,
             glowIntensity: 0.3,

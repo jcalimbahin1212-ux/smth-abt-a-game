@@ -10,6 +10,8 @@ import { InteractableObject } from '../entities/InteractableObject.js';
 import { NPCEntity } from '../entities/NPCEntity.js';
 import { textureGenerator } from '../utils/TextureGenerator.js';
 import { FaceWashAnimation } from '../ui/FaceWashAnimation.js';
+import { PlayerModel } from '../entities/PlayerModel.js';
+import { MirrorRenderer } from '../systems/MirrorRenderer.js';
 
 export class TannerHouseScene {
     constructor(game) {
@@ -30,6 +32,11 @@ export class TannerHouseScene {
         this.hasTalkedToTanner = game.storyState?.hasTalkedToTanner || false;
         this.hasMedicine = game.storyState?.hasMedicine || false;
         
+        // Player model and mirror references
+        this.playerModel = null;
+        this.mirrorRenderer = null;
+        this.bathroomMirror = null;
+        
         try {
             // Get textures
             this.woodTexture = textureGenerator.getTexture('wood', { color: { r: 150, g: 110, b: 70 } });
@@ -46,6 +53,13 @@ export class TannerHouseScene {
             this.createBathroom();
             this.createInteractables();
             this.createAtmosphericEffects();
+            
+            // Setup player model and mirror
+            this.setupPlayerModel();
+            this.setupMirrorRenderer();
+            
+            // Spawn Tanner in the kitchen right away
+            this.spawnTanner();
             
             console.log('TannerHouseScene fully constructed, children:', this.scene.children.length);
         } catch (error) {
@@ -1711,8 +1725,8 @@ export class TannerHouseScene {
         sinkGroup.position.set(-1, 0, -10.5);
         this.scene.add(sinkGroup);
         
-        // Mirror above sink
-        const mirror = new THREE.Mesh(
+        // Mirror above sink - store reference for reflection rendering
+        this.bathroomMirror = new THREE.Mesh(
             new THREE.BoxGeometry(0.8, 1, 0.05),
             new THREE.MeshStandardMaterial({ 
                 color: 0x8899aa, 
@@ -1721,8 +1735,8 @@ export class TannerHouseScene {
                 envMapIntensity: 1.5
             })
         );
-        mirror.position.set(-1, 1.8, -10.9);
-        this.scene.add(mirror);
+        this.bathroomMirror.position.set(-1, 1.8, -10.9);
+        this.scene.add(this.bathroomMirror);
         
         // Mirror frame
         const mirrorFrame = new THREE.Mesh(
@@ -2581,10 +2595,7 @@ export class TannerHouseScene {
         
         // Play face wash animation
         const faceWashAnim = new FaceWashAnimation(game.audioManager, () => {
-            // After animation, spawn Tanner in kitchen if not already there
-            if (!this.hasTalkedToTanner) {
-                this.spawnTanner();
-            }
+            // Tanner is already spawned, just show the objective
             
             // Show objective hint
             game.uiManager.showNotification('Find medicine for the headache', 'objective', 5000);
@@ -2598,9 +2609,12 @@ export class TannerHouseScene {
         const tanner = new NPCEntity({
             name: 'Tanner',
             position: new THREE.Vector3(14, 0, 0),
-            color: 0x6b5b4f,
-            accentColor: 0x8b7355,
-            height: 1.8,
+            bodyColor: 0x5a6b5f, // Green-gray shirt
+            skinColor: 0xd4b896,
+            hairColor: 0x2a1a10, // Darker hair
+            hairStyle: 'spiky', // Tanner has spiky hair - distinctive look
+            bodyType: 'athletic',
+            height: 1.82,
             dialogues: {
                 'greeting': {
                     speaker: 'Tanner',
@@ -2813,6 +2827,51 @@ export class TannerHouseScene {
         
         if (this.bedroomLamp) {
             this.bedroomLamp.intensity = 2.5 + Math.sin(time * 2.5 + 1) * 0.025;
+        }
+        
+        // Update mirror rendering if player is near bathroom
+        if (this.mirrorRenderer && this.playerModel) {
+            const camera = this.game.sceneManager?.camera;
+            if (camera) {
+                // Only render mirror when near the bathroom
+                const distanceToMirror = camera.position.distanceTo(new THREE.Vector3(-1, 1.8, -10.9));
+                if (distanceToMirror < 5) {
+                    this.playerModel.update(deltaTime, camera);
+                    this.mirrorRenderer.update(this.scene, camera, this.game.renderer?.renderer);
+                }
+            }
+        }
+    }
+    
+    setupPlayerModel() {
+        // Create Adrian's player model for mirror reflection
+        this.playerModel = new PlayerModel(this.game, {
+            skinColor: 0xc4a484,
+            hairColor: 0x2a1a0a,
+            shirtColor: 0x2d4a5e,
+            pantsColor: 0x1a1a1a,
+            hairStyle: 'short',
+            height: 1.75,
+            bodyType: 'average'
+        });
+        
+        // Add to scene but keep invisible (only visible in mirror)
+        this.playerModel.addToScene(this.scene);
+        this.playerModel.setVisible(false);
+    }
+    
+    setupMirrorRenderer() {
+        // Setup mirror renderer for the bathroom mirror
+        if (this.bathroomMirror) {
+            this.mirrorRenderer = new MirrorRenderer(this.game, this.bathroomMirror, {
+                width: 256,
+                height: 384
+            });
+            
+            // Connect player model to mirror renderer
+            if (this.playerModel) {
+                this.mirrorRenderer.setPlayerModel(this.playerModel);
+            }
         }
     }
     
