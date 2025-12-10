@@ -244,16 +244,28 @@ export class SceneManager {
     
     // Get interactable objects in the current scene
     getInteractables() {
-        if (this.currentSceneData && this.currentSceneData.interactables) {
-            return this.currentSceneData.interactables;
+        if (this.currentSceneData) {
+            // Try calling getInteractables method first, then fall back to property
+            if (typeof this.currentSceneData.getInteractables === 'function') {
+                return this.currentSceneData.getInteractables();
+            }
+            if (this.currentSceneData.interactables) {
+                return this.currentSceneData.interactables;
+            }
         }
         return [];
     }
     
     // Get NPCs in the current scene
     getNPCs() {
-        if (this.currentSceneData && this.currentSceneData.npcs) {
-            return this.currentSceneData.npcs;
+        if (this.currentSceneData) {
+            // Try calling getNPCs method first, then fall back to property
+            if (typeof this.currentSceneData.getNPCs === 'function') {
+                return this.currentSceneData.getNPCs();
+            }
+            if (this.currentSceneData.npcs) {
+                return this.currentSceneData.npcs;
+            }
         }
         return [];
     }
