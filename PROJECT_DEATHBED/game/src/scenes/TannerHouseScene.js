@@ -2832,15 +2832,23 @@ export class TannerHouseScene {
         // Update mirror rendering if player is near bathroom
         if (this.mirrorRenderer && this.playerModel) {
             const camera = this.game.sceneManager?.camera;
-            if (camera) {
+            const renderer = this.game.renderer?.renderer;
+            if (camera && renderer) {
                 // Only render mirror when near the bathroom
                 const distanceToMirror = camera.position.distanceTo(new THREE.Vector3(-1, 1.8, -10.9));
-                if (distanceToMirror < 5) {
+                if (distanceToMirror < 6) {
                     this.playerModel.update(deltaTime, camera);
-                    this.mirrorRenderer.update(this.scene, camera, this.game.renderer?.renderer);
+                    this.mirrorRenderer.update(this.scene, camera, renderer);
                 }
             }
         }
+        
+        // Update NPCs
+        this.npcs.forEach(npc => {
+            if (npc.update) {
+                npc.update(deltaTime);
+            }
+        });
     }
     
     setupPlayerModel() {
@@ -2862,6 +2870,7 @@ export class TannerHouseScene {
     
     setupMirrorRenderer() {
         // Setup mirror renderer for the bathroom mirror
+        console.log('setupMirrorRenderer called, bathroomMirror:', this.bathroomMirror ? 'exists' : 'null');
         if (this.bathroomMirror) {
             this.mirrorRenderer = new MirrorRenderer(this.game, this.bathroomMirror, {
                 width: 256,
@@ -2871,7 +2880,10 @@ export class TannerHouseScene {
             // Connect player model to mirror renderer
             if (this.playerModel) {
                 this.mirrorRenderer.setPlayerModel(this.playerModel);
+                console.log('Mirror renderer initialized with player model');
             }
+        } else {
+            console.warn('bathroomMirror not found - mirror rendering disabled');
         }
     }
     

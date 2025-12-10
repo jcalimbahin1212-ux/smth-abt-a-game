@@ -62,6 +62,12 @@ export class MirrorRenderer {
     
     update(scene, mainCamera, renderer) {
         if (!this.enabled || !this.mirrorMesh || !mainCamera || !renderer) {
+            console.log('MirrorRenderer.update: Missing requirements:', {
+                enabled: this.enabled,
+                mirrorMesh: !!this.mirrorMesh,
+                mainCamera: !!mainCamera,
+                renderer: !!renderer
+            });
             return;
         }
         
@@ -86,8 +92,7 @@ export class MirrorRenderer {
         // Position mirror camera at reflected position
         this.mirrorCamera.position.copy(this._reflectedPos);
         
-        // Mirror camera looks at where the player would be (reflected view)
-        // It should look towards the player position through the mirror
+        // Mirror camera looks at the player position
         this._tempVec.copy(cameraPos);
         this._tempVec.y = 1.0; // Look at roughly chest height
         this.mirrorCamera.lookAt(this._tempVec);
@@ -114,6 +119,7 @@ export class MirrorRenderer {
         
         // Render scene to mirror texture
         renderer.setRenderTarget(this.renderTarget);
+        renderer.setClearColor(0x888888); // Set a visible clear color for debugging
         renderer.clear();
         renderer.render(scene, this.mirrorCamera);
         

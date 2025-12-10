@@ -45,7 +45,8 @@ export class InteractionSystem {
         // Check interactable objects
         interactables.forEach(obj => {
             if (obj.isInRange(camera.position)) {
-                const intersects = this.raycaster.intersectObject(obj.mesh);
+                // Use recursive intersect to catch all children including invisible hitboxes
+                const intersects = this.raycaster.intersectObject(obj.mesh, true);
                 if (intersects.length > 0 && intersects[0].distance < closestDistance) {
                     closestDistance = intersects[0].distance;
                     closestTarget = obj;
