@@ -1361,32 +1361,39 @@ export class RooftopScene {
     }
     
     triggerWakeUpSequence(game) {
-        // Import and play TannerWakeUpAnimation (wake up in Tanner's house)
-        import('../ui/TannerWakeUpAnimation.js').then(module => {
-            const TannerWakeUpAnimation = module.TannerWakeUpAnimation;
-            const wakeUp = new TannerWakeUpAnimation(game.audioManager, () => {
-                // After waking up, load Tanner's house scene
-                game.sceneManager.loadScene('tanner_house');
-                
-                // Set game state
-                if (game.storyState) {
-                    game.storyState.justWokeUpAtTanners = true;
-                    game.storyState.hasHeadache = true;
-                }
-                
-                // Show headache reminder after a moment
-                setTimeout(() => {
-                    if (game.dialogueSystem) {
-                        game.dialogueSystem.showDialogue({
-                            speaker: 'Adrian',
-                            speakerColor: '#aaccff',
-                            text: "I should probably find Tanner... and maybe get some coffee for this headache.",
-                            choices: []
-                        });
-                    }
-                }, 2000);
+        // First, play the falling animation (Prologue 3)
+        import('../ui/Prologue3Animation.js').then(module => {
+            const Prologue3Animation = module.Prologue3Animation;
+            const fallAnimation = new Prologue3Animation(game.audioManager, () => {
+                // After falling, play TannerWakeUpAnimation (wake up in Tanner's house)
+                import('../ui/TannerWakeUpAnimation.js').then(wakeModule => {
+                    const TannerWakeUpAnimation = wakeModule.TannerWakeUpAnimation;
+                    const wakeUp = new TannerWakeUpAnimation(game.audioManager, () => {
+                        // After waking up, load Tanner's house scene
+                        game.sceneManager.loadScene('tanner_house');
+                        
+                        // Set game state
+                        if (game.storyState) {
+                            game.storyState.justWokeUpAtTanners = true;
+                            game.storyState.hasHeadache = true;
+                        }
+                        
+                        // Show headache reminder after a moment
+                        setTimeout(() => {
+                            if (game.dialogueSystem) {
+                                game.dialogueSystem.showDialogue({
+                                    speaker: 'Adrian',
+                                    speakerColor: '#aaccff',
+                                    text: "I should probably find Tanner... and maybe get some coffee for this headache.",
+                                    choices: []
+                                });
+                            }
+                        }, 2000);
+                    });
+                    wakeUp.start();
+                });
             });
-            wakeUp.start();
+            fallAnimation.start();
         });
     }
     

@@ -1,10 +1,13 @@
 /**
  * PROJECT DEATHBED - NPC Entity
  * Enhanced non-player characters with detailed models, textures, and visual effects
+ * Supports both procedural models and external GLTF/GLB models
  */
 
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { textureGenerator } from '../utils/TextureGenerator.js';
+import { MaleCharacterModel } from './MaleCharacterModel.js';
 
 export class NPCEntity {
     constructor(options) {
@@ -24,6 +27,19 @@ export class NPCEntity {
         this.interactionRadius = options.interactionRadius || 3;
         this.isInteractable = true;
         this.height = options.height || 1.75;
+        
+        // External model support
+        this.modelPath = options.modelPath || null; // Path to GLTF/GLB file
+        this.modelScale = options.modelScale || 1.0;
+        this.modelLoaded = false;
+        this.mixer = null; // Animation mixer for external models
+        this.animations = {}; // Named animations
+        this.currentAnimation = null;
+        
+        // Mixamo model support - use tactical/toony styled Mixamo characters
+        this.useMixamoModel = options.useMixamoModel !== undefined ? options.useMixamoModel : true; // Default to Mixamo
+        this.characterStyle = options.characterStyle || 'tactical'; // 'adrian', 'tanner', 'tactical', 'civilian'
+        this.maleCharacterModel = null;
         
         // Animation state
         this.breathingPhase = Math.random() * Math.PI * 2;
@@ -45,10 +61,26 @@ export class NPCEntity {
     createModel() {
         this.group = new THREE.Group();
         
-        // For Luis lying down, we create a detailed lying figure
-        if (this.name === 'Luis') {
+        console.log(`[NPCEntity] Creating model for ${this.name}, useMixamoModel: ${this.useMixamoModel}`);
+        
+        // Check if using external model path (custom GLTF)
+        if (this.modelPath) {
+            console.log(`[NPCEntity] ${this.name}: Using external model path`);
+            this.loadExternalModel();
+        } 
+        // Luis uses the lying figure (special case)
+        else if (this.name === 'Luis') {
+            console.log(`[NPCEntity] ${this.name}: Using lying figure`);
             this.createDetailedLyingFigure();
-        } else {
+        }
+        // Use Mixamo-based tactical/toony model for male NPCs
+        else if (this.useMixamoModel) {
+            console.log(`[NPCEntity] ${this.name}: Loading Mixamo model`);
+            this.loadMixamoModel();
+        }
+        // Fallback to procedural model
+        else {
+            console.log(`[NPCEntity] ${this.name}: Using procedural model`);
             this.createDetailedStandingFigure();
         }
         
@@ -57,6 +89,170 @@ export class NPCEntity {
         
         // Store reference for interaction
         this.group.userData.npc = this;
+    }
+    
+    /**
+     * Load the Mixamo-based male character with tactical/toony styling
+     */
+    loadMixamoModel() {
+        // Determine style based on character name or explicit setting
+        let style = this.characterStyle;
+        if (this.name.toLowerCase() === 'adrian') style = 'adrian';
+        else if (this.name.toLowerCase() === 'tanner') style = 'tanner';
+        
+        this.maleCharacterModel = new MaleCharacterModel({
+            name: this.name,
+            style: style,
+            position: new THREE.Vector3(0, 0, 0), // Relative to group
+            rotation: 0,
+            scale: 0.01, // FBX models need scaling
+            skinColor: this.skinColor,
+            onLoad: (model) => {
+                this.modelLoaded = true;
+                this.mixer = model.mixer;
+                this.animations = model.animations;
+                console.log(`[NPCEntity] ${this.name}: Mixamo model loaded with '${style}' style`);
+            },
+            onError: (error) => {
+                console.warn(`[NPCEntity] ${this.name}: Mixamo model failed, using procedural fallback`);
+                this.createDetailedStandingFigure();
+            }
+        });
+        
+        this.group.add(this.maleCharacterModel.group);
+    }
+    
+    /**
+     * Load an external GLTF/GLB model for this NPC
+     */
+    loadExternalModel() {
+        const loader = new GLTFLoader();
+        
+        // Create a placeholder while loading
+        const placeholderGeometry = new THREE.CapsuleGeometry(0.2, 0.5, 8, 16);
+        const placeholderMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x888888, 
+            transparent: true, 
+            opacity: 0.5 
+        });
+        this.placeholder = new THREE.Mesh(placeholderGeometry, placeholderMaterial);
+        this.placeholder.position.y = 0.9;
+        this.group.add(this.placeholder);
+        
+        loader.load(
+            this.modelPath,
+            (gltf) => {
+                // Remove placeholder
+                if (this.placeholder) {
+                    this.group.remove(this.placeholder);
+                    this.placeholder = null;
+                }
+                
+                // Add the loaded model
+                const model = gltf.scene;
+                model.scale.setScalar(this.modelScale);
+                
+                // Enable shadows for all meshes
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        
+                        // Apply glow if enabled
+                        if (this.isGlowing && child.material) {
+                            child.material = child.material.clone();
+                            child.material.emissive = new THREE.Color(this.glowColor);
+                            child.material.emissiveIntensity = this.glowIntensity;
+                        }
+                    }
+                });
+                
+                this.group.add(model);
+                this.externalModel = model;
+                
+                // Set up animations if present
+                if (gltf.animations && gltf.animations.length > 0) {
+                    this.mixer = new THREE.AnimationMixer(model);
+                    
+                    gltf.animations.forEach((clip) => {
+                        const action = this.mixer.clipAction(clip);
+                        this.animations[clip.name] = action;
+                        
+                        // Try to find and play idle animation by default
+                        const idleNames = ['idle', 'Idle', 'IDLE', 'standing', 'Standing'];
+                        if (idleNames.some(name => clip.name.toLowerCase().includes(name.toLowerCase()))) {
+                            action.play();
+                            this.currentAnimation = clip.name;
+                        }
+                    });
+                    
+                    // If no idle found, play first animation
+                    if (!this.currentAnimation && gltf.animations.length > 0) {
+                        const firstClip = gltf.animations[0];
+                        this.animations[firstClip.name].play();
+                        this.currentAnimation = firstClip.name;
+                    }
+                    
+                    console.log(`[NPCEntity] ${this.name}: Loaded ${gltf.animations.length} animations:`, 
+                        gltf.animations.map(a => a.name));
+                }
+                
+                this.modelLoaded = true;
+                console.log(`[NPCEntity] ${this.name}: External model loaded from ${this.modelPath}`);
+            },
+            (progress) => {
+                // Loading progress
+                const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                console.log(`[NPCEntity] ${this.name}: Loading model... ${percent}%`);
+            },
+            (error) => {
+                console.error(`[NPCEntity] ${this.name}: Failed to load model from ${this.modelPath}:`, error);
+                // Fall back to procedural model
+                if (this.placeholder) {
+                    this.group.remove(this.placeholder);
+                    this.placeholder = null;
+                }
+                this.createDetailedStandingFigure();
+            }
+        );
+    }
+    
+    /**
+     * Play a specific animation by name
+     * @param {string} animationName - Name of the animation to play
+     * @param {boolean} loop - Whether to loop the animation (default: true)
+     * @param {number} transitionDuration - Crossfade duration in seconds (default: 0.3)
+     */
+    playAnimation(animationName, loop = true, transitionDuration = 0.3) {
+        if (!this.mixer || !this.animations[animationName]) {
+            console.warn(`[NPCEntity] ${this.name}: Animation '${animationName}' not found`);
+            return false;
+        }
+        
+        const newAction = this.animations[animationName];
+        
+        // Stop current animation with crossfade
+        if (this.currentAnimation && this.animations[this.currentAnimation]) {
+            const currentAction = this.animations[this.currentAnimation];
+            currentAction.fadeOut(transitionDuration);
+        }
+        
+        // Start new animation
+        newAction.reset();
+        newAction.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce);
+        newAction.clampWhenFinished = !loop;
+        newAction.fadeIn(transitionDuration);
+        newAction.play();
+        
+        this.currentAnimation = animationName;
+        return true;
+    }
+    
+    /**
+     * Get list of available animation names
+     */
+    getAnimationNames() {
+        return Object.keys(this.animations);
     }
     
     createDetailedLyingFigure() {
@@ -1203,6 +1399,33 @@ export class NPCEntity {
     }
     
     update(deltaTime) {
+        // Update Mixamo-based character model
+        if (this.maleCharacterModel) {
+            this.maleCharacterModel.update(deltaTime);
+            return;
+        }
+        
+        // Update animation mixer for external models
+        if (this.mixer) {
+            this.mixer.update(deltaTime);
+        }
+        
+        // Skip procedural animations if using external model
+        if (this.modelPath && this.modelLoaded) {
+            // Only apply glow pulse to external models
+            if (this.isGlowing && this.externalModel) {
+                this.breathingPhase += deltaTime * 1.2;
+                const pulseIntensity = this.glowIntensity * (0.7 + Math.sin(this.breathingPhase * 0.8) * 0.4);
+                
+                this.externalModel.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.emissiveIntensity !== undefined) {
+                        child.material.emissiveIntensity = pulseIntensity;
+                    }
+                });
+            }
+            return;
+        }
+        
         // Subtle breathing animation
         this.breathingPhase += deltaTime * 1.2;
         
@@ -1313,6 +1536,12 @@ export class NPCEntity {
     }
     
     highlight(enabled) {
+        // Handle Mixamo-based model highlighting
+        if (this.maleCharacterModel) {
+            this.maleCharacterModel.highlight(enabled);
+            return;
+        }
+        
         if (this.body && this.body.material) {
             if (enabled) {
                 this.body.material.emissive = new THREE.Color(0x3a3a2a);
